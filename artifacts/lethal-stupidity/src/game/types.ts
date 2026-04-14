@@ -14,6 +14,7 @@ export interface Monster {
   patrolTarget: THREE.Vector3 | null;
   patrolTimer: number;
   deathMessage: string;
+  modelChar: string;
 }
 
 export interface ScrapItem {
@@ -59,6 +60,7 @@ export const MONSTER_TEMPLATES = [
     color: "#ff3366",
     scale: [1.2, 2, 1.2] as [number, number, number],
     deathMessage: "Screaming Larry heard you sneeze and took it personally.",
+    modelChar: "a",
   },
   {
     name: "The Wobbler",
@@ -68,6 +70,7 @@ export const MONSTER_TEMPLATES = [
     color: "#66ff33",
     scale: [2, 1, 2] as [number, number, number],
     deathMessage: "The Wobbler wobbled you to death. How embarrassing.",
+    modelChar: "b",
   },
   {
     name: "Sir Trips-a-Lot",
@@ -77,6 +80,7 @@ export const MONSTER_TEMPLATES = [
     color: "#3366ff",
     scale: [0.8, 3, 0.8] as [number, number, number],
     deathMessage: "Sir Trips-a-Lot tripped over you. You were crushed.",
+    modelChar: "c",
   },
   {
     name: "Greg",
@@ -86,6 +90,7 @@ export const MONSTER_TEMPLATES = [
     color: "#ff9933",
     scale: [1.5, 1.5, 1.5] as [number, number, number],
     deathMessage: "Greg got you. Just Greg. Nothing special about Greg.",
+    modelChar: "d",
   },
   {
     name: "The Honker",
@@ -95,6 +100,37 @@ export const MONSTER_TEMPLATES = [
     color: "#cc33ff",
     scale: [1, 1.8, 1.3] as [number, number, number],
     deathMessage: "The Honker honked so hard your soul left your body.",
+    modelChar: "e",
+  },
+  {
+    name: "Dave",
+    speed: 2.5,
+    hearingRange: 18,
+    chaseSpeed: 4.5,
+    color: "#ff6600",
+    scale: [1.3, 1.8, 1.3] as [number, number, number],
+    deathMessage: "Dave didn't even say sorry.",
+    modelChar: "f",
+  },
+  {
+    name: "Big Berta",
+    speed: 1,
+    hearingRange: 35,
+    chaseSpeed: 5.5,
+    color: "#ff00aa",
+    scale: [2, 2, 2] as [number, number, number],
+    deathMessage: "Big Berta sat on you. Completely avoidable.",
+    modelChar: "g",
+  },
+  {
+    name: "The Intern",
+    speed: 4,
+    hearingRange: 8,
+    chaseSpeed: 3,
+    color: "#00ffff",
+    scale: [0.9, 1.7, 0.9] as [number, number, number],
+    deathMessage: "Even the intern got you. This is rock bottom.",
+    modelChar: "h",
   },
 ];
 

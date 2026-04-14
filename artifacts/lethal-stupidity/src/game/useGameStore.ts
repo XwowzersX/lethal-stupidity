@@ -37,6 +37,7 @@ function generateMonsters(): Monster[] {
       patrolTarget: randomPosition(60, template.scale[1] / 2),
       patrolTimer: 0,
       deathMessage: template.deathMessage,
+      modelChar: template.modelChar,
     });
   }
   return monsters;
