@@ -1,8 +1,8 @@
-# Workspace
+# Lethal Stupidity
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+A browser-based 3D horror-comedy game inspired by Lethal Company. Players explore a dark facility, collect scrap items to meet a quota, and avoid goofy monsters that can hear them through their real microphone.
 
 ## Stack
 
@@ -10,18 +10,40 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Frontend**: React + Vite
+- **3D Engine**: Three.js via @react-three/fiber and @react-three/drei
+- **State Management**: Zustand
+- **Voice Detection**: Web Audio API (browser microphone)
+
+## Game Features
+
+- First-person 3D exploration in a dark facility
+- Voice detection via microphone - monsters react to player noise
+- Multiple monster types with unique behaviors and funny death messages
+- Scrap collection system with quota requirements
+- Flashlight toggle
+- Extraction zone mechanic
+- Timer-based urgency
+- Silly/stupid humor throughout
+
+## Key Files
+
+- `artifacts/lethal-stupidity/src/game/` - All game logic
+  - `types.ts` - Game types, monster templates, scrap items
+  - `useGameStore.ts` - Zustand game state management
+  - `useVoiceDetection.ts` - Microphone input hook
+  - `GameScene.tsx` - Main 3D canvas scene
+  - `PlayerController.tsx` - First-person movement + pointer lock
+  - `Flashlight.tsx` - Spotlight following camera
+  - `MonsterEntity.tsx` - Monster rendering + animation
+  - `ScrapEntity.tsx` - Collectible items
+  - `FacilityMap.tsx` - Level geometry (walls, pillars, floor, ceiling)
+  - `GameHUD.tsx` - Health, timer, noise meter, scrap counter
+  - `MenuScreen.tsx` - Main menu
+  - `DeathScreen.tsx` - Death screen with tips
+  - `ExtractScreen.tsx` - Victory/extraction screen
 
 ## Key Commands
 
+- `pnpm --filter @workspace/lethal-stupidity run dev` — run game locally
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
-
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
