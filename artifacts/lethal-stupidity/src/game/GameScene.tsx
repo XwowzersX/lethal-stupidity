@@ -1,4 +1,5 @@
 import { Canvas } from "@react-three/fiber";
+import * as THREE from "three";
 import { useGameStore } from "./useGameStore";
 import { FacilityMap } from "./FacilityMap";
 import { MonsterEntity } from "./MonsterEntity";
