@@ -12,7 +12,6 @@ export function PlayerController() {
   const playerPos = useRef(new THREE.Vector3(0, 1.6, 0));
 
   const phase = useGameStore((s) => s.phase);
-  const flashlightOn = useGameStore((s) => s.flashlightOn);
   const updatePlayerPosition = useGameStore((s) => s.updatePlayerPosition);
   const toggleFlashlight = useGameStore((s) => s.toggleFlashlight);
   const collectScrap = useGameStore((s) => s.collectScrap);
@@ -64,11 +63,12 @@ export function PlayerController() {
     if (phase !== "playing") return;
 
     const speed = moveState.current.sprint ? 8 : 5;
-    const direction = new THREE.Vector3();
     const frontVector = new THREE.Vector3(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward));
     const sideVector = new THREE.Vector3(Number(moveState.current.left) - Number(moveState.current.right), 0, 0);
-
-    direction.subVectors(frontVector, sideVector).normalize().multiplyScalar(speed);
+    const direction = new THREE.Vector3()
+      .subVectors(frontVector, sideVector)
+      .normalize()
+      .multiplyScalar(speed);
     direction.applyEuler(camera.rotation);
     direction.y = 0;
 
@@ -93,25 +93,5 @@ export function PlayerController() {
     }
   });
 
-  return (
-    <>
-      {phase === "playing" && <PointerLockControls ref={controlsRef} />}
-      {flashlightOn && (
-        <spotLight
-          position={camera.position.toArray()}
-          target-position={[
-            camera.position.x + camera.getWorldDirection(new THREE.Vector3()).x * 10,
-            camera.position.y + camera.getWorldDirection(new THREE.Vector3()).y * 10,
-            camera.position.z + camera.getWorldDirection(new THREE.Vector3()).z * 10,
-          ]}
-          angle={0.5}
-          penumbra={0.3}
-          intensity={2}
-          distance={30}
-          color="#ffffcc"
-          castShadow
-        />
-      )}
-    </>
-  );
+  return <>{phase === "playing" && <PointerLockControls ref={controlsRef} />}</>;
 }
