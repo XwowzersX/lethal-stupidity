@@ -30,12 +30,12 @@ interface WallProps {
 
 function Wall({ position, size, texture, normalMap }: WallProps) {
   return (
-    <mesh position={position} castShadow receiveShadow>
+    <mesh position={position}>
       <boxGeometry args={size} />
       <meshStandardMaterial
         map={texture}
         normalMap={normalMap}
-        normalScale={new THREE.Vector2(0.8, 0.8)}
+        normalScale={new THREE.Vector2(0.35, 0.35)}
         roughness={0.9}
         metalness={0.05}
       />
@@ -46,15 +46,15 @@ function Wall({ position, size, texture, normalMap }: WallProps) {
 function Pillar({ position, texture }: { position: [number, number, number]; texture: THREE.CanvasTexture }) {
   return (
     <group position={position}>
-      <mesh castShadow receiveShadow>
+      <mesh>
         <cylinderGeometry args={[0.4, 0.5, 6, 6]} />
         <meshStandardMaterial map={texture} roughness={0.8} metalness={0.2} />
       </mesh>
-      <mesh position={[0, -2.8, 0]} castShadow receiveShadow>
+      <mesh position={[0, -2.8, 0]}>
         <boxGeometry args={[1.2, 0.4, 1.2]} />
         <meshStandardMaterial map={texture} roughness={0.8} />
       </mesh>
-      <mesh position={[0, 2.8, 0]} castShadow receiveShadow>
+      <mesh position={[0, 2.8, 0]}>
         <boxGeometry args={[1.2, 0.4, 1.2]} />
         <meshStandardMaterial map={texture} roughness={0.8} />
       </mesh>
@@ -62,11 +62,11 @@ function Pillar({ position, texture }: { position: [number, number, number]; tex
   );
 }
 
-function CeilingLight({ position, withShadow = false }: { position: [number, number, number]; withShadow?: boolean }) {
+function CeilingLight({ position }: { position: [number, number, number]; withShadow?: boolean }) {
   const flickerRef = useRef<THREE.PointLight>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const stateRef = useRef({
-    baseIntensity: 2.2 + Math.random() * 1.2,
+    baseIntensity: 1.1 + Math.random() * 0.5,
     flickerTimer: 0,
     flickerInterval: 3 + Math.random() * 10,
     isFlickering: Math.random() > 0.85,
@@ -93,7 +93,7 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
 
   return (
     <group position={position}>
-      <mesh receiveShadow>
+      <mesh>
         <boxGeometry args={[1.5, 0.1, 0.4]} />
         <meshStandardMaterial color="#1a1a1a" roughness={0.6} metalness={0.8} />
       </mesh>
@@ -102,7 +102,7 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
         <meshStandardMaterial
           color="#ffffcc"
           emissive="#ffffcc"
-          emissiveIntensity={1.25}
+          emissiveIntensity={1.8}
           roughness={0.1}
         />
       </mesh>
@@ -110,7 +110,7 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
         ref={flickerRef}
         color="#ffe8b0"
         intensity={stateRef.current.baseIntensity}
-        distance={18}
+        distance={14}
         decay={2}
         castShadow={false}
       />
@@ -131,7 +131,7 @@ function Pipe({ from, to, texture }: { from: [number, number, number]; to: [numb
   const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
 
   return (
-    <mesh position={mid} quaternion={quat} castShadow>
+    <mesh position={mid} quaternion={quat}>
       <cylinderGeometry args={[0.08, 0.08, len, 6]} />
       <meshStandardMaterial map={texture} roughness={0.5} metalness={0.7} />
     </mesh>
@@ -141,12 +141,12 @@ function Pipe({ from, to, texture }: { from: [number, number, number]; to: [numb
 function Vent({ position, rotation }: { position: [number, number, number]; rotation?: [number, number, number] }) {
   return (
     <group position={position} rotation={rotation}>
-      <mesh castShadow receiveShadow>
+      <mesh>
         <boxGeometry args={[1, 0.8, 0.05]} />
         <meshStandardMaterial color="#1a1a24" roughness={0.7} metalness={0.5} />
       </mesh>
       {[-0.3, -0.1, 0.1, 0.3].map((y, i) => (
-        <mesh key={i} position={[0, y, 0.03]} castShadow>
+        <mesh key={i} position={[0, y, 0.03]}>
           <boxGeometry args={[0.9, 0.06, 0.1]} />
           <meshStandardMaterial color="#111118" roughness={0.6} metalness={0.6} />
         </mesh>
@@ -219,7 +219,7 @@ function ExtractionZone() {
           side={THREE.DoubleSide}
         />
       </mesh>
-      <pointLight ref={glowRef} color="#00ff00" intensity={1.5} distance={10} />
+      <pointLight ref={glowRef} color="#00ff00" intensity={0.8} distance={8} />
     </group>
   );
 }
@@ -249,7 +249,6 @@ const LIGHT_POSITIONS: [number, number, number][] = [
   [0, 5.85, 20], [-30, 5.85, 0], [30, 5.85, 0],
   [-15, 5.85, 20], [15, 5.85, -20], [-5, 5.85, -30],
 ];
-const SHADOW_LIGHT_INDICES = new Set([0, 2, 4]);
 
 const PILLAR_POSITIONS: [number, number, number][] = [
   [-20, 3, -20], [20, 3, -20], [-20, 3, 20], [20, 3, 20],
@@ -280,7 +279,7 @@ export function FacilityMap() {
 
   return (
     <group>
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[70, 70, 20, 20]} />
         <meshStandardMaterial
           map={floor}
@@ -314,7 +313,7 @@ export function FacilityMap() {
       ))}
 
       {LIGHT_POSITIONS.map((p, i) => (
-        <CeilingLight key={i} position={p} withShadow={SHADOW_LIGHT_INDICES.has(i)} />
+        <CeilingLight key={i} position={p} />
       ))}
 
       {PIPE_RUNS.map((run, i) => (
@@ -331,7 +330,7 @@ export function FacilityMap() {
 
       <ExtractionZone />
 
-      <mesh position={[-20, 4, -33.4]} receiveShadow>
+      <mesh position={[-20, 4, -33.4]}>
         <boxGeometry args={[4, 2, 0.3]} />
         <meshStandardMaterial color="#111118" roughness={0.8} metalness={0.6} />
       </mesh>
@@ -343,11 +342,11 @@ export function FacilityMap() {
 
       {[-25, 0, 25].map((x, i) => (
         <group key={i}>
-          <mesh position={[x, 1, -15]} castShadow receiveShadow>
+          <mesh position={[x, 1, -15]}>
             <boxGeometry args={[1.2, 2, 0.8]} />
             <meshStandardMaterial map={metal} roughness={0.7} metalness={0.5} />
           </mesh>
-          <mesh position={[x, 0.5, -15]} receiveShadow>
+          <mesh position={[x, 0.5, -15]}>
             <boxGeometry args={[1.4, 0.2, 1]} />
             <meshStandardMaterial color="#111" roughness={1} />
           </mesh>

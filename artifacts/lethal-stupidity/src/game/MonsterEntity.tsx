@@ -26,15 +26,12 @@ function AlertIndicator({ state, height }: { state: Monster["state"]; height: nu
   if (state === "patrolling" || state === "idle") return null;
 
   const color = state === "chasing" ? "#ff2200" : "#ffcc00";
-  const intensity = state === "chasing" ? 5 : 2;
-
   return (
     <group position={[0, height + 0.3, 0]}>
       <mesh ref={meshRef}>
         <coneGeometry args={[0.18, 0.45, 4]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
       </mesh>
-      <pointLight color={color} intensity={intensity} distance={10} decay={2} />
     </group>
   );
 }
@@ -53,8 +50,8 @@ function MonsterModel({
     clone.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (mesh.isMesh) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
       }
     });
     return clone;

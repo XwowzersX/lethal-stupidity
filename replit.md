@@ -53,3 +53,4 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 
 - The game is registered as the root web preview at `/`.
 - `App.tsx` only lazy-loads the 3D game scene after gameplay begins so the menu can load reliably in the preview before WebGL is needed.
+- Gameplay lighting is intentionally optimized for the browser preview: shadows are disabled, scrap/monster indicator point lights are avoided, and the flashlight stays mounted while its intensity changes to prevent multi-second WebGL shader stalls.

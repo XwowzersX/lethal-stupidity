@@ -5,8 +5,6 @@ import { ScrapItem } from "./types";
 
 interface ScrapEntityProps {
   item: ScrapItem;
-  onCollect: () => void;
-  playerPosition: THREE.Vector3;
 }
 
 function getItemGeometry(id: string): React.ReactNode {
@@ -22,12 +20,10 @@ function getItemGeometry(id: string): React.ReactNode {
   }
 }
 
-export function ScrapEntity({ item, onCollect, playerPosition }: ScrapEntityProps) {
+export function ScrapEntity({ item }: ScrapEntityProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
   const timeRef = useRef(Math.random() * Math.PI * 2);
-  const collectedRef = useRef(false);
 
   const color = useMemo(() => {
     const hue = ((item.value / 50) * 0.4 + 0.05) % 1;
@@ -35,7 +31,7 @@ export function ScrapEntity({ item, onCollect, playerPosition }: ScrapEntityProp
   }, [item.value]);
 
   useFrame((_, delta) => {
-    if (item.collected || collectedRef.current) return;
+    if (item.collected) return;
     timeRef.current += delta;
     const t = timeRef.current;
 
@@ -51,22 +47,13 @@ export function ScrapEntity({ item, onCollect, playerPosition }: ScrapEntityProp
       glowRef.current.scale.setScalar(pulse);
     }
 
-    if (lightRef.current) {
-      lightRef.current.intensity = 0.6 + Math.sin(t * 4) * 0.2;
-    }
-
-    const dist = (meshRef.current?.getWorldPosition(new THREE.Vector3()) ?? item.position).distanceTo(playerPosition);
-    if (dist < 2.5 && !collectedRef.current) {
-      collectedRef.current = true;
-      onCollect();
-    }
   });
 
   if (item.collected) return null;
 
   return (
     <group position={item.position.toArray()}>
-      <mesh ref={meshRef} castShadow>
+      <mesh ref={meshRef}>
         {getItemGeometry(item.id)}
         <meshStandardMaterial
           color={color}
@@ -94,7 +81,6 @@ export function ScrapEntity({ item, onCollect, playerPosition }: ScrapEntityProp
         <meshBasicMaterial color="#000" transparent opacity={0.3} />
       </mesh>
 
-      <pointLight ref={lightRef} color={color} intensity={0.6} distance={5} />
     </group>
   );
 }

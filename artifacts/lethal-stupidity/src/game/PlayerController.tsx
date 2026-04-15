@@ -12,6 +12,9 @@ export function PlayerController() {
   const playerPos = useRef(new THREE.Vector3(0, 1.6, 0));
 
   const frameCount = useRef(0);
+  const frontVector = useRef(new THREE.Vector3());
+  const sideVector = useRef(new THREE.Vector3());
+  const direction = useRef(new THREE.Vector3());
   const phase = useGameStore((s) => s.phase);
   const updatePlayerPosition = useGameStore((s) => s.updatePlayerPosition);
   const toggleFlashlight = useGameStore((s) => s.toggleFlashlight);
@@ -64,17 +67,17 @@ export function PlayerController() {
     if (phase !== "playing") return;
 
     const speed = moveState.current.sprint ? 8 : 5;
-    const frontVector = new THREE.Vector3(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward));
-    const sideVector = new THREE.Vector3(Number(moveState.current.left) - Number(moveState.current.right), 0, 0);
-    const direction = new THREE.Vector3()
-      .subVectors(frontVector, sideVector)
+    frontVector.current.set(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward));
+    sideVector.current.set(Number(moveState.current.left) - Number(moveState.current.right), 0, 0);
+    direction.current
+      .subVectors(frontVector.current, sideVector.current)
       .normalize()
       .multiplyScalar(speed);
-    direction.applyEuler(camera.rotation);
-    direction.y = 0;
+    direction.current.applyEuler(camera.rotation);
+    direction.current.y = 0;
 
-    velocity.current.lerp(direction, 0.15);
-    playerPos.current.add(velocity.current.clone().multiplyScalar(delta));
+    velocity.current.lerp(direction.current, 0.15);
+    playerPos.current.addScaledVector(velocity.current, delta);
 
     const boundary = 33;
     playerPos.current.x = Math.max(-boundary, Math.min(boundary, playerPos.current.x));
@@ -83,7 +86,7 @@ export function PlayerController() {
 
     camera.position.copy(playerPos.current);
     frameCount.current++;
-    if (frameCount.current % 3 === 0) {
+    if (frameCount.current % 6 === 0) {
       updatePlayerPosition(playerPos.current.clone());
     }
 

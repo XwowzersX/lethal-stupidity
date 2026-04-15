@@ -83,8 +83,6 @@ export function GameScene() {
   const phase = useGameStore((s) => s.phase);
   const monsters = useGameStore((s) => s.monsters);
   const scrapItems = useGameStore((s) => s.scrapItems);
-  const playerPosition = useGameStore((s) => s.playerPosition);
-  const collectScrap = useGameStore((s) => s.collectScrap);
   const updateMicLevel = useGameStore((s) => s.updateMicLevel);
   const health = useGameStore((s) => s.health);
   const noiseLevel = useGameStore((s) => s.noiseLevel);
@@ -117,20 +115,21 @@ export function GameScene() {
         zIndex: 1,
       }}>
         <Canvas
-          shadows={{ type: THREE.PCFShadowMap }}
+          shadows={false}
           camera={{ fov: 80, near: 0.05, far: 100, position: [0, 1.6, 0] }}
-          dpr={[0.75, 1.5]}
+          dpr={[0.6, 1]}
           performance={{ min: 0.5 }}
           gl={{
             antialias: false,
             toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 0.6,
+            toneMappingExposure: 0.9,
             powerPreference: "high-performance",
           }}
           style={{ width: "100%", height: "100%" }}
         >
-          <ambientLight intensity={0.08} color="#2b3558" />
-          <fog attach="fog" args={["#05070c", 6, 28]} />
+          <ambientLight intensity={0.38} color="#8fa4d8" />
+          <hemisphereLight args={["#c8d8ff", "#151820", 0.5]} />
+          <fog attach="fog" args={["#070a10", 10, 34]} />
 
           <FacilityMap />
           <DustParticles />
@@ -143,8 +142,6 @@ export function GameScene() {
             <ScrapEntity
               key={item.id}
               item={item}
-              playerPosition={playerPosition}
-              onCollect={() => collectScrap(item.id)}
             />
           ))}
 
