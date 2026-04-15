@@ -46,4 +46,10 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 ## Key Commands
 
 - `pnpm --filter @workspace/lethal-stupidity run dev` — run game locally
+- `PORT=25978 BASE_PATH=/ pnpm --filter @workspace/lethal-stupidity run dev` — workflow command used by the Replit preview
 - `pnpm run typecheck` — full typecheck across all packages
+
+## Runtime Notes
+
+- The game is registered as the root web preview at `/`.
+- `App.tsx` only lazy-loads the 3D game scene after gameplay begins so the menu can load reliably in the preview before WebGL is needed.
