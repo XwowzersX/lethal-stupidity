@@ -7,6 +7,7 @@ import {
   ScrapItem,
   MONSTER_TEMPLATES,
   SCRAP_ITEMS,
+  LEVEL_CONFIGS,
 } from "./types";
 
 function randomPosition(range: number, y = 0): THREE.Vector3 {
@@ -17,24 +18,29 @@ function randomPosition(range: number, y = 0): THREE.Vector3 {
   );
 }
 
-function generateMonsters(): Monster[] {
+function generateMonsters(level: number): Monster[] {
+  const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
+  const count = config.monsterCount;
+  if (count === 0) return [];
+
   const monsters: Monster[] = [];
   const shuffled = [...MONSTER_TEMPLATES].sort(() => Math.random() - 0.5);
-  const count = 3 + Math.floor(Math.random() * 3);
+
   for (let i = 0; i < count; i++) {
     const template = shuffled[i % shuffled.length];
+    const scale = template.scale;
     monsters.push({
       id: `monster-${i}`,
       name: template.name,
-      position: randomPosition(60, template.scale[1] / 2),
-      speed: template.speed,
-      hearingRange: template.hearingRange,
-      chaseSpeed: template.chaseSpeed,
+      position: randomPosition(60, scale[1] / 2),
+      speed: template.speed * (1 + (level - 1) * 0.1),
+      hearingRange: template.hearingRange * (1 + (level - 1) * 0.05),
+      chaseSpeed: template.chaseSpeed * (1 + (level - 1) * 0.1),
       state: "patrolling",
       alertLevel: 0,
       color: template.color,
-      scale: template.scale,
-      patrolTarget: randomPosition(60, template.scale[1] / 2),
+      scale,
+      patrolTarget: randomPosition(60, scale[1] / 2),
       patrolTimer: 0,
       deathMessage: template.deathMessage,
       modelChar: template.modelChar,
@@ -43,9 +49,13 @@ function generateMonsters(): Monster[] {
   return monsters;
 }
 
-function generateScrap(): ScrapItem[] {
+function generateScrap(level: number): ScrapItem[] {
+  const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
+  const needed = config.scrapQuota;
+  const avgValue = 22;
+  const baseCount = Math.ceil(needed / avgValue) + 5 + Math.floor(Math.random() * 6);
+  const count = Math.min(baseCount, 30);
   const items: ScrapItem[] = [];
-  const count = 15 + Math.floor(Math.random() * 10);
   for (let i = 0; i < count; i++) {
     const template = SCRAP_ITEMS[Math.floor(Math.random() * SCRAP_ITEMS.length)];
     items.push({
@@ -63,6 +73,9 @@ interface GameStore extends GameState {
   monsters: Monster[];
   scrapItems: ScrapItem[];
   playerPosition: THREE.Vector3;
+  enterElevator: (level: number, isRespawn?: boolean) => void;
+  startLevel: () => void;
+  nextLevel: () => void;
   startGame: () => void;
   updateMicLevel: (level: number) => void;
   collectScrap: (id: string) => void;
@@ -81,14 +94,54 @@ export const useGameStore = create<GameStore>((set, get) => ({
   scrapItems: [],
   playerPosition: new THREE.Vector3(0, 1.6, 0),
 
-  startGame: () => {
+  enterElevator: (level: number, isRespawn = false) => {
+    const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
     set({
-      ...INITIAL_GAME_STATE,
-      phase: "playing",
-      monsters: generateMonsters(),
-      scrapItems: generateScrap(),
+      phase: "elevator",
+      currentLevel: level,
+      isRespawn,
+      scrapQuota: config.scrapQuota,
+      timeRemaining: config.timeLimit,
+      health: 100,
+      scrapCollected: 0,
+      micLevel: 0,
+      noiseLevel: 0,
+      flashlightOn: true,
+      deathMessage: "",
+      monsters: [],
+      scrapItems: [],
       playerPosition: new THREE.Vector3(0, 1.6, 0),
     });
+  },
+
+  startLevel: () => {
+    const state = get();
+    const level = state.currentLevel;
+    const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
+    set({
+      phase: "playing",
+      health: 100,
+      scrapCollected: 0,
+      scrapQuota: config.scrapQuota,
+      timeRemaining: config.timeLimit,
+      micLevel: 0,
+      noiseLevel: 0,
+      flashlightOn: true,
+      deathMessage: "",
+      monsters: generateMonsters(level),
+      scrapItems: generateScrap(level),
+      playerPosition: new THREE.Vector3(0, 1.6, 0),
+    });
+  },
+
+  nextLevel: () => {
+    const state = get();
+    const nextLvl = state.currentLevel + 1;
+    get().enterElevator(nextLvl, false);
+  },
+
+  startGame: () => {
+    get().enterElevator(1, false);
   },
 
   updateMicLevel: (level: number) => {
@@ -222,6 +275,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   returnToMenu: () => {
-    set({ ...INITIAL_GAME_STATE });
+    set({ ...INITIAL_GAME_STATE, monsters: [], scrapItems: [], playerPosition: new THREE.Vector3(0, 1.6, 0) });
   },
 }));

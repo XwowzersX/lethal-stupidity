@@ -1,4 +1,5 @@
 import { useGameStore } from "./useGameStore";
+import { LEVEL_CONFIGS } from "./types";
 
 export function GameHUD() {
   const health = useGameStore((s) => s.health);
@@ -9,6 +10,8 @@ export function GameHUD() {
   const noiseLevel = useGameStore((s) => s.noiseLevel);
   const flashlightOn = useGameStore((s) => s.flashlightOn);
   const playerPosition = useGameStore((s) => s.playerPosition);
+  const currentLevel = useGameStore((s) => s.currentLevel);
+  const levelConfig = LEVEL_CONFIGS[Math.min(currentLevel - 1, LEVEL_CONFIGS.length - 1)];
 
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = Math.floor(timeRemaining % 60);
@@ -40,6 +43,9 @@ export function GameHUD() {
         borderRadius: 8,
         border: "1px solid #00ff0044",
       }}>
+        <div style={{ fontSize: 10, color: "#335533", letterSpacing: 3, marginBottom: 8 }}>
+          {levelConfig.floorName}
+        </div>
         <div style={{ fontSize: 14, marginBottom: 6 }}>
           HEALTH: <span style={{ color: health > 50 ? "#00ff00" : health > 25 ? "#ffaa00" : "#ff0000" }}>
             {"[" + "=".repeat(Math.floor(health / 10)) + " ".repeat(10 - Math.floor(health / 10)) + "]"}
@@ -48,7 +54,7 @@ export function GameHUD() {
         <div style={{ fontSize: 14, marginBottom: 6 }}>
           TIME: <span style={{ color: timeRemaining < 60 ? "#ff0000" : "#00ff00" }}>{timeStr}</span>
         </div>
-        <div style={{ fontSize: 14, marginBottom: 6 }}>
+        <div style={{ fontSize: 14, marginBottom: 0 }}>
           FLASHLIGHT: {flashlightOn ? "ON [F]" : "OFF [F]"}
         </div>
       </div>

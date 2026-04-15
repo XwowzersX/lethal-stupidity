@@ -25,8 +25,156 @@ export interface ScrapItem {
   collected: boolean;
 }
 
+export interface LevelConfig {
+  level: number;
+  floorName: string;
+  monsterCount: number;
+  scrapQuota: number;
+  timeLimit: number;
+  tutorialLines: string[];
+  respawnLines: string[];
+}
+
+export const LEVEL_CONFIGS: LevelConfig[] = [
+  {
+    level: 1,
+    floorName: "B1 — THE LOBBY",
+    monsterCount: 0,
+    scrapQuota: 80,
+    timeLimit: 300,
+    tutorialLines: [
+      "Initializing employee orientation protocol...",
+      "Welcome, new employee. I am ARIA.",
+      "Automated Retention & Incentivization Assistant.",
+      "Your mission: collect scrap and reach the extraction zone.",
+      "WASD to move. Mouse to look. SHIFT to sprint.",
+      "Press F to toggle your flashlight. Press E at the green zone to extract.",
+      "Floor B1 is designated a 'safe' zone. No active hazards.",
+      "...the definition of 'safe' is subject to periodic revision.",
+      "Quota: $80. Time limit: 5 minutes.",
+      "Doors opening. Don't die. The paperwork is horrendous.",
+    ],
+    respawnLines: [
+      "Re-initializing employee unit...",
+      "The Company has logged your death as 'employee error'.",
+      "Returning you to B1 — THE LOBBY.",
+      "Quota: $80. Please try harder this time.",
+    ],
+  },
+  {
+    level: 2,
+    floorName: "B2 — STORAGE",
+    monsterCount: 2,
+    scrapQuota: 200,
+    timeLimit: 270,
+    tutorialLines: [
+      "Descending to B2 — STORAGE...",
+      "Hazard advisory: 2 residents detected on this floor.",
+      "Residents are sensitive to noise. Keep quiet.",
+      "Quota: $200. Time limit: 4 minutes 30 seconds.",
+      "The Company believes in you.",
+      "...statistically speaking, one of you will survive.",
+    ],
+    respawnLines: [
+      "Recovering remains...",
+      "Returning to B2 — STORAGE. Again.",
+      "The residents are confused by your persistence. And so are we.",
+      "Quota: $200. You can do this. Probably.",
+    ],
+  },
+  {
+    level: 3,
+    floorName: "B3 — MAINTENANCE",
+    monsterCount: 4,
+    scrapQuota: 350,
+    timeLimit: 240,
+    tutorialLines: [
+      "Descending to B3 — MAINTENANCE...",
+      "4 residents detected. They are in a bad mood.",
+      "They are always in a bad mood.",
+      "Quota: $350. Time limit: 4 minutes.",
+      "Flashlight conservation advised. The residents notice lights.",
+      "Good luck. You will need it.",
+    ],
+    respawnLines: [
+      "Scraping you off the floor...",
+      "B3 — MAINTENANCE. Try number: unknown. The counter broke.",
+      "4 residents. $350 quota. You know the drill.",
+      "...please stop dying. ARIA is getting emotionally affected.",
+    ],
+  },
+  {
+    level: 4,
+    floorName: "B4 — THE DEEP",
+    monsterCount: 6,
+    scrapQuota: 500,
+    timeLimit: 200,
+    tutorialLines: [
+      "Descending to B4 — THE DEEP...",
+      "This floor was condemned in 2019.",
+      "6 residents. They have been here a long time.",
+      "They are not happy.",
+      "Quota: $500. Time limit: 3 minutes 20 seconds.",
+      "ARIA recommends staying very, very quiet.",
+    ],
+    respawnLines: [
+      "Re-materializing employee...",
+      "Back to B4 — THE DEEP. Impressive commitment to failure.",
+      "$500 quota. 6 residents. You know this already.",
+      "ARIA is rooting for you. Out of pity.",
+    ],
+  },
+  {
+    level: 5,
+    floorName: "B5 — ???",
+    monsterCount: 8,
+    scrapQuota: 750,
+    timeLimit: 180,
+    tutorialLines: [
+      "Descending to B5...",
+      "ARIA cannot verify what is on this floor.",
+      "Sensors indicate: 8 readings. Or possibly one very large one.",
+      "Quota: $750. Time limit: 3 minutes.",
+      "The Company appreciates your sacrifice.",
+      "...that was not a slip. Definitely not.",
+      "Doors opening.",
+    ],
+    respawnLines: [
+      "Reassembling you...",
+      "B5 — ???. You keep coming back.",
+      "8 residents. $750 quota. ARIA admires your stubbornness.",
+      "Or your stupidity. Probably the latter.",
+    ],
+  },
+  {
+    level: 6,
+    floorName: "B6 — THE END",
+    monsterCount: 10,
+    scrapQuota: 1000,
+    timeLimit: 150,
+    tutorialLines: [
+      "Descending to B6...",
+      "...",
+      "ARIA has no data on this floor.",
+      "No employee has returned from B6.",
+      "10 residents detected. Or 10 signals. Or 10 things.",
+      "Quota: $1000. Time limit: 2 minutes 30 seconds.",
+      "If you make it back, you win.",
+      "The Company will give you a raise.",
+      "...a posthumous raise.",
+      "Doors opening.",
+    ],
+    respawnLines: [
+      "...",
+      "You died on B6. Somehow you came back.",
+      "ARIA is filing a report about this.",
+      "$1000 quota. Good luck. You supernatural freak.",
+    ],
+  },
+];
+
 export interface GameState {
-  phase: "menu" | "playing" | "dead" | "extracted";
+  phase: "menu" | "elevator" | "playing" | "dead" | "extracted";
   health: number;
   scrapCollected: number;
   scrapQuota: number;
@@ -36,19 +184,23 @@ export interface GameState {
   flashlightOn: boolean;
   deathMessage: string;
   totalScrapValue: number;
+  currentLevel: number;
+  isRespawn: boolean;
 }
 
 export const INITIAL_GAME_STATE: GameState = {
   phase: "menu",
   health: 100,
   scrapCollected: 0,
-  scrapQuota: 150,
+  scrapQuota: 80,
   timeRemaining: 300,
   micLevel: 0,
   noiseLevel: 0,
   flashlightOn: true,
   deathMessage: "",
   totalScrapValue: 0,
+  currentLevel: 1,
+  isRespawn: false,
 };
 
 export const MONSTER_TEMPLATES = [

@@ -9,10 +9,8 @@ export function MenuScreen() {
   return (
     <div style={{
       position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      height: "100vh",
+      top: 0, left: 0,
+      width: "100vw", height: "100vh",
       background: "linear-gradient(180deg, #0a0a1a 0%, #1a0a2a 50%, #0a1a0a 100%)",
       display: "flex",
       flexDirection: "column",
@@ -24,56 +22,73 @@ export function MenuScreen() {
       overflow: "hidden",
     }}>
       <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        position: "absolute", inset: 0,
         background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,0,0.03) 2px, rgba(0,255,0,0.03) 4px)",
         pointerEvents: "none",
       }} />
 
       <div style={{
-        fontSize: 72,
-        fontWeight: "bold",
+        fontSize: 72, fontWeight: "bold",
         textShadow: "0 0 20px #00ff00, 0 0 40px #00ff00, 0 0 60px #00aa00",
-        marginBottom: 8,
-        letterSpacing: 4,
+        marginBottom: 8, letterSpacing: 4,
       }}>
         LETHAL
       </div>
       <div style={{
-        fontSize: 48,
-        fontWeight: "bold",
+        fontSize: 48, fontWeight: "bold",
         color: "#ff3366",
         textShadow: "0 0 20px #ff3366, 0 0 40px #ff3366",
-        marginBottom: 40,
-        letterSpacing: 8,
+        marginBottom: 48, letterSpacing: 8,
       }}>
         STUPIDITY
       </div>
 
       <div style={{
-        fontSize: 14,
-        maxWidth: 500,
-        textAlign: "center",
-        lineHeight: 1.8,
-        marginBottom: 40,
-        opacity: 0.8,
+        display: "flex",
+        gap: 32,
+        marginBottom: 48,
+        fontSize: 12,
+        color: "#334433",
       }}>
-        Welcome, Employee #{Math.floor(Math.random() * 9999).toString().padStart(4, "0")}.<br />
-        The Company requires you to collect scrap from the facility.<br />
-        Use your microphone wisely - <span style={{ color: "#ff3366" }}>the monsters can hear you</span>.<br />
-        Meet your quota. Extract alive. Don't be stupid.<br />
-        <span style={{ fontSize: 11, opacity: 0.6 }}>(You're going to be stupid.)</span>
+        {["B1 – Safe","B2 – Sketchy","B3 – Bad","B4 – The Deep","B5 – ???","B6 – THE END"].map((name, i) => (
+          <div key={i} style={{ textAlign: "center" }}>
+            <div style={{
+              width: 36, height: 36,
+              border: "1px solid #223322",
+              borderRadius: 4,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 4,
+              color: "#335533",
+              fontSize: 14,
+              fontWeight: "bold",
+            }}>
+              B{i + 1}
+            </div>
+            <div style={{ fontSize: 9, letterSpacing: 1 }}>{name.split(" – ")[1]}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        fontSize: 14,
+        maxWidth: 460,
+        textAlign: "center",
+        lineHeight: 1.9,
+        marginBottom: 44,
+        opacity: 0.7,
+      }}>
+        Descend through 6 floors of escalating stupidity.<br />
+        Collect scrap. Meet your quota. Don't make noise.<br />
+        <span style={{ color: "#ff3366" }}>The monsters can hear you.</span><br />
+        <span style={{ fontSize: 11, opacity: 0.5 }}>(You're going to be stupid.)</span>
       </div>
 
       <button
         onClick={startGame}
         style={{
           fontFamily: "'Courier New', monospace",
-          fontSize: 24,
-          padding: "16px 48px",
+          fontSize: 22,
+          padding: "16px 52px",
           background: "transparent",
           border: "2px solid #00ff00",
           color: "#00ff00",
@@ -97,21 +112,19 @@ export function MenuScreen() {
       </button>
 
       <div style={{
-        marginTop: 30,
+        marginTop: 28,
         fontSize: 11,
-        opacity: 0.4,
+        opacity: 0.35,
         textAlign: "center",
         lineHeight: 1.8,
       }}>
-        WASD - Move | SHIFT - Sprint | Mouse - Look<br />
-        F - Flashlight | E - Extract | Your Voice - Attract Monsters
+        WASD - Move &nbsp;|&nbsp; SHIFT - Sprint &nbsp;|&nbsp; Mouse - Look<br />
+        F - Flashlight &nbsp;|&nbsp; E - Extract &nbsp;|&nbsp; Your Voice - Attract Monsters
       </div>
 
       <div style={{
-        position: "absolute",
-        bottom: 20,
-        fontSize: 10,
-        opacity: 0.3,
+        position: "absolute", bottom: 20,
+        fontSize: 10, opacity: 0.25,
       }}>
         THE COMPANY IS NOT RESPONSIBLE FOR EMPLOYEE DEATHS, DISMEMBERMENT, OR EMOTIONAL TRAUMA
       </div>
