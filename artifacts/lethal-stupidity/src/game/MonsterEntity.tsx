@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -25,7 +25,8 @@ function AlertIndicator({ state, height }: { state: Monster["state"]; height: nu
 
   if (state === "patrolling" || state === "idle") return null;
 
-  const color = state === "chasing" ? "#ff0000" : "#ffcc00";
+  const color = state === "chasing" ? "#ff2200" : "#ffcc00";
+  const intensity = state === "chasing" ? 5 : 2;
 
   return (
     <group position={[0, height + 0.3, 0]}>
@@ -33,61 +34,31 @@ function AlertIndicator({ state, height }: { state: Monster["state"]; height: nu
         <coneGeometry args={[0.18, 0.45, 4]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
       </mesh>
-      <pointLight color={color} intensity={state === "chasing" ? 4 : 1.5} distance={8} />
+      <pointLight color={color} intensity={intensity} distance={10} decay={2} />
     </group>
   );
 }
 
-function MonsterModel({ modelChar, scale, state, color }: {
+function MonsterModel({
+  modelChar,
+  scale,
+}: {
   modelChar: string;
   scale: [number, number, number];
-  state: Monster["state"];
-  color: string;
 }) {
   const { scene } = useGLTF(`/characters/character-${modelChar}.glb`);
+
   const cloned = useMemo(() => {
     const clone = scene.clone(true);
-
     clone.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mesh = obj as THREE.Mesh;
-        if (Array.isArray(mesh.material)) {
-          mesh.material = mesh.material.map((m) => m.clone());
-        } else {
-          mesh.material = (mesh.material as THREE.Material).clone();
-        }
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
       }
     });
     return clone;
-  }, [scene, modelChar]);
-
-  useEffect(() => {
-    cloned.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mesh = obj as THREE.Mesh;
-        const applyToMat = (mat: THREE.Material) => {
-          const stdMat = mat as THREE.MeshStandardMaterial;
-          if (state === "chasing") {
-            stdMat.emissive = new THREE.Color("#550000");
-            stdMat.emissiveIntensity = 0.5 + Math.random() * 0.1;
-          } else if (state === "alerted") {
-            stdMat.emissive = new THREE.Color("#443300");
-            stdMat.emissiveIntensity = 0.3;
-          } else {
-            stdMat.emissive = new THREE.Color("#000000");
-            stdMat.emissiveIntensity = 0;
-          }
-        };
-        if (Array.isArray(mesh.material)) {
-          mesh.material.forEach(applyToMat);
-        } else {
-          applyToMat(mesh.material as THREE.Material);
-        }
-      }
-    });
-  }, [state, cloned]);
+  }, [scene]);
 
   const modelScale = scale[1] * 0.52;
 
@@ -113,14 +84,13 @@ export function MonsterEntity({ monster }: { monster: Monster }) {
 
     group.position.set(monster.position.x, monster.position.y, monster.position.z);
 
-    if (monster.patrolTarget) {
-      const dir = new THREE.Vector3()
-        .subVectors(
-          monster.state === "chasing" || monster.state === "alerted"
-            ? new THREE.Vector3(0, 0, 0)
-            : monster.patrolTarget,
-          monster.position
-        );
+    const target =
+      monster.state === "chasing" || monster.state === "alerted"
+        ? monster.patrolTarget
+        : monster.patrolTarget;
+
+    if (target) {
+      const dir = new THREE.Vector3().subVectors(target, monster.position);
       dir.y = 0;
       if (dir.length() > 0.1) {
         facingRef.current.lerp(dir.normalize(), 0.15);
@@ -136,8 +106,7 @@ export function MonsterEntity({ monster }: { monster: Monster }) {
     } else if (monster.state === "alerted") {
       group.rotation.z = Math.sin(t * 4) * 0.08;
     } else {
-      const sway = Math.sin(t * 1.5) * 0.03;
-      group.rotation.z = sway;
+      group.rotation.z = Math.sin(t * 1.5) * 0.03;
     }
   });
 
@@ -145,12 +114,7 @@ export function MonsterEntity({ monster }: { monster: Monster }) {
 
   return (
     <group ref={groupRef} position={monster.position.toArray()}>
-      <MonsterModel
-        modelChar={monster.modelChar}
-        scale={monster.scale}
-        state={monster.state}
-        color={monster.color}
-      />
+      <MonsterModel modelChar={monster.modelChar} scale={monster.scale} />
 
       <AlertIndicator state={monster.state} height={modelHeight} />
 
