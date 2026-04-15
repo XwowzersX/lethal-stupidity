@@ -5,10 +5,12 @@ import {
   INITIAL_GAME_STATE,
   Monster,
   ScrapItem,
+  MazeLayout,
   MONSTER_TEMPLATES,
   SCRAP_ITEMS,
   LEVEL_CONFIGS,
 } from "./types";
+import { canMoveThrough, generateMazeLayout } from "./mazeGenerator";
 
 function randomPosition(range: number, y = 0): THREE.Vector3 {
   return new THREE.Vector3(
@@ -18,7 +20,13 @@ function randomPosition(range: number, y = 0): THREE.Vector3 {
   );
 }
 
-function generateMonsters(level: number): Monster[] {
+function pickSpawn(spawns: THREE.Vector3[], index: number, fallbackRange: number, y = 0) {
+  const spawn = spawns[index % Math.max(1, spawns.length)];
+  if (spawn) return spawn.clone().setY(y);
+  return randomPosition(fallbackRange, y);
+}
+
+function generateMonsters(level: number, mazeLayout: MazeLayout): Monster[] {
   const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
   const count = config.monsterCount;
   if (count === 0) return [];
@@ -32,7 +40,7 @@ function generateMonsters(level: number): Monster[] {
     monsters.push({
       id: `monster-${i}`,
       name: template.name,
-      position: randomPosition(60, scale[1] / 2),
+      position: pickSpawn(mazeLayout.monsterSpawns, i, 60, scale[1] / 2),
       speed: template.speed * (1 + (level - 1) * 0.1),
       hearingRange: template.hearingRange * (1 + (level - 1) * 0.05),
       chaseSpeed: template.chaseSpeed * (1 + (level - 1) * 0.1),
@@ -40,7 +48,7 @@ function generateMonsters(level: number): Monster[] {
       alertLevel: 0,
       color: template.color,
       scale,
-      patrolTarget: randomPosition(60, scale[1] / 2),
+      patrolTarget: pickSpawn(mazeLayout.patrolPoints, i + 3, 60, scale[1] / 2),
       patrolTimer: 0,
       deathMessage: template.deathMessage,
       modelChar: template.modelChar,
@@ -49,7 +57,7 @@ function generateMonsters(level: number): Monster[] {
   return monsters;
 }
 
-function generateScrap(level: number): ScrapItem[] {
+function generateScrap(level: number, mazeLayout: MazeLayout): ScrapItem[] {
   const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
   const needed = config.scrapQuota;
   const avgValue = 22;
@@ -62,7 +70,7 @@ function generateScrap(level: number): ScrapItem[] {
       id: `scrap-${i}`,
       name: template.name,
       value: template.value,
-      position: randomPosition(55, 0.3),
+      position: pickSpawn(mazeLayout.scrapSpawns, i, 55, 0.3),
       collected: false,
     });
   }
@@ -93,6 +101,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   monsters: [],
   scrapItems: [],
   playerPosition: new THREE.Vector3(0, 1.6, 0),
+  mazeLayout: null,
 
   enterElevator: (level: number, isRespawn = false) => {
     const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
@@ -110,6 +119,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       deathMessage: "",
       monsters: [],
       scrapItems: [],
+      mazeLayout: null,
       playerPosition: new THREE.Vector3(0, 1.6, 0),
     });
   },
@@ -118,6 +128,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const state = get();
     const level = state.currentLevel;
     const config = LEVEL_CONFIGS[Math.min(level - 1, LEVEL_CONFIGS.length - 1)];
+    const mazeLayout = generateMazeLayout(level);
     set({
       phase: "playing",
       health: 100,
@@ -128,9 +139,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       noiseLevel: 0,
       flashlightOn: true,
       deathMessage: "",
-      monsters: generateMonsters(level),
-      scrapItems: generateScrap(level),
-      playerPosition: new THREE.Vector3(0, 1.6, 0),
+      mazeLayout,
+      monsters: generateMonsters(level, mazeLayout),
+      scrapItems: generateScrap(level, mazeLayout),
+      playerPosition: mazeLayout.elevatorPosition.clone(),
     });
   },
 
@@ -186,6 +198,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const playerPos = state.playerPosition;
     const noise = state.noiseLevel;
+    const mazeLayout = state.mazeLayout;
+    const patrolPoints = state.mazeLayout?.patrolPoints ?? [];
 
     const updatedMonsters = state.monsters.map((monster) => {
       const m = { ...monster, position: monster.position.clone() };
@@ -210,7 +224,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
           .subVectors(playerPos, m.position)
           .normalize();
         dir.y = 0;
-        m.position.add(dir.multiplyScalar(m.chaseSpeed * delta));
+        const desired = m.position.clone().add(dir.multiplyScalar(m.chaseSpeed * delta));
+        if (!mazeLayout || canMoveThrough(mazeLayout, m.position, desired)) {
+          m.position.copy(desired);
+        }
         m.position.y = m.scale[1] / 2;
 
         if (dist < 2) {
@@ -224,7 +241,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
           .subVectors(playerPos, m.position)
           .normalize();
         dir.y = 0;
-        m.position.add(dir.multiplyScalar(m.speed * 0.5 * delta));
+        const desired = m.position.clone().add(dir.multiplyScalar(m.speed * 0.5 * delta));
+        if (!mazeLayout || canMoveThrough(mazeLayout, m.position, desired)) {
+          m.position.copy(desired);
+        }
         m.position.y = m.scale[1] / 2;
       } else {
         m.patrolTimer -= delta;
@@ -233,7 +253,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
           !m.patrolTarget ||
           m.position.distanceTo(m.patrolTarget) < 2
         ) {
-          m.patrolTarget = randomPosition(60, m.scale[1] / 2);
+          m.patrolTarget = pickSpawn(
+            patrolPoints,
+            Math.floor(Math.random() * Math.max(1, patrolPoints.length)),
+            60,
+            m.scale[1] / 2,
+          );
           m.patrolTimer = 3 + Math.random() * 5;
         }
         if (m.patrolTarget) {
@@ -241,7 +266,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
             .subVectors(m.patrolTarget, m.position)
             .normalize();
           dir.y = 0;
-          m.position.add(dir.multiplyScalar(m.speed * delta));
+          const desired = m.position.clone().add(dir.multiplyScalar(m.speed * delta));
+          if (!mazeLayout || canMoveThrough(mazeLayout, m.position, desired)) {
+            m.position.copy(desired);
+          } else {
+            m.patrolTimer = 0;
+          }
           m.position.y = m.scale[1] / 2;
         }
       }
@@ -269,12 +299,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   extract: () => {
     const state = get();
-    if (state.scrapCollected >= state.scrapQuota) {
+    const extractionPosition = state.mazeLayout?.extractionPosition ?? new THREE.Vector3();
+    const nearExtract = state.playerPosition.distanceTo(extractionPosition) < 4.5;
+    if (nearExtract && state.scrapCollected >= state.scrapQuota) {
       set({ phase: "extracted" });
     }
   },
 
   returnToMenu: () => {
-    set({ ...INITIAL_GAME_STATE, monsters: [], scrapItems: [], playerPosition: new THREE.Vector3(0, 1.6, 0) });
+    set({ ...INITIAL_GAME_STATE, monsters: [], scrapItems: [], mazeLayout: null, playerPosition: new THREE.Vector3(0, 1.6, 0) });
   },
 }));

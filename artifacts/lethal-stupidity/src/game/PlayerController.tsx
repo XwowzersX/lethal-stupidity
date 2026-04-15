@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useGameStore } from "./useGameStore";
+import { canMoveThrough } from "./mazeGenerator";
 
 export function PlayerController() {
   const { camera } = useThree();
@@ -16,6 +17,7 @@ export function PlayerController() {
   const sideVector = useRef(new THREE.Vector3());
   const direction = useRef(new THREE.Vector3());
   const phase = useGameStore((s) => s.phase);
+  const mazeLayout = useGameStore((s) => s.mazeLayout);
   const updatePlayerPosition = useGameStore((s) => s.updatePlayerPosition);
   const toggleFlashlight = useGameStore((s) => s.toggleFlashlight);
   const collectScrap = useGameStore((s) => s.collectScrap);
@@ -35,14 +37,15 @@ export function PlayerController() {
       case "KeyF": toggleFlashlight(); break;
       case "KeyE": {
         const pp = playerPos.current;
-        const dist = Math.sqrt(pp.x * pp.x + pp.z * pp.z);
+        const extraction = mazeLayout?.extractionPosition ?? new THREE.Vector3();
+        const dist = pp.distanceTo(extraction);
         if (dist < 4 && scrapCollected >= scrapQuota) {
           extract();
         }
         break;
       }
     }
-  }, [phase, toggleFlashlight, extract, scrapCollected, scrapQuota]);
+  }, [phase, mazeLayout, toggleFlashlight, extract, scrapCollected, scrapQuota]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     switch (e.code) {
@@ -63,6 +66,14 @@ export function PlayerController() {
     };
   }, [handleKeyDown, handleKeyUp]);
 
+  useEffect(() => {
+    if (phase === "playing" && mazeLayout) {
+      playerPos.current.copy(mazeLayout.elevatorPosition);
+      camera.position.copy(mazeLayout.elevatorPosition);
+      updatePlayerPosition(mazeLayout.elevatorPosition.clone());
+    }
+  }, [phase, mazeLayout, camera, updatePlayerPosition]);
+
   useFrame((_, delta) => {
     if (phase !== "playing") return;
 
@@ -77,9 +88,29 @@ export function PlayerController() {
     direction.current.y = 0;
 
     velocity.current.lerp(direction.current, 0.15);
-    playerPos.current.addScaledVector(velocity.current, delta);
+    const desired = playerPos.current.clone().addScaledVector(velocity.current, delta);
 
-    const boundary = 33;
+    if (mazeLayout) {
+      const tryX = playerPos.current.clone();
+      tryX.x = desired.x;
+      if (canMoveThrough(mazeLayout, playerPos.current, tryX)) {
+        playerPos.current.x = desired.x;
+      } else {
+        velocity.current.x = 0;
+      }
+
+      const tryZ = playerPos.current.clone();
+      tryZ.z = desired.z;
+      if (canMoveThrough(mazeLayout, playerPos.current, tryZ)) {
+        playerPos.current.z = desired.z;
+      } else {
+        velocity.current.z = 0;
+      }
+    } else {
+      playerPos.current.copy(desired);
+    }
+
+    const boundary = mazeLayout ? Math.max(mazeLayout.width, mazeLayout.height) * mazeLayout.cellSize : 33;
     playerPos.current.x = Math.max(-boundary, Math.min(boundary, playerPos.current.x));
     playerPos.current.z = Math.max(-boundary, Math.min(boundary, playerPos.current.z));
     playerPos.current.y = 1.6;

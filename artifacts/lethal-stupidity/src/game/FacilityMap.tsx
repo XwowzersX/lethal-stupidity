@@ -1,6 +1,8 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { useGameStore } from "./useGameStore";
+import { MazeCell } from "./types";
 import {
   createConcreteTexture,
   createRustMetalTexture,
@@ -16,8 +18,7 @@ function useTextures() {
     const metal = createRustMetalTexture();
     const ceiling = createCeilingTexture();
     const concreteNormal = createNormalMap(concrete);
-    const floorNormal = createNormalMap(floor);
-    return { floor, concrete, metal, ceiling, concreteNormal, floorNormal };
+    return { floor, concrete, metal, ceiling, concreteNormal };
   }, []);
 }
 
@@ -26,341 +27,212 @@ interface WallProps {
   size: [number, number, number];
   texture: THREE.CanvasTexture;
   normalMap?: THREE.CanvasTexture;
+  metal?: boolean;
 }
 
-function Wall({ position, size, texture, normalMap }: WallProps) {
+function Wall({ position, size, texture, normalMap, metal = false }: WallProps) {
   return (
     <mesh position={position}>
       <boxGeometry args={size} />
       <meshStandardMaterial
         map={texture}
-        color="#d8d8d0"
+        color={metal ? "#c8c0b0" : "#d8d8d0"}
         normalMap={normalMap}
-        normalScale={new THREE.Vector2(0.35, 0.35)}
-        emissive="#1d1f22"
-        emissiveIntensity={0.28}
-        roughness={0.9}
-        metalness={0.05}
+        normalScale={new THREE.Vector2(0.3, 0.3)}
+        emissive={metal ? "#202018" : "#1d1f22"}
+        emissiveIntensity={metal ? 0.18 : 0.3}
+        roughness={metal ? 0.55 : 0.9}
+        metalness={metal ? 0.35 : 0.05}
       />
     </mesh>
   );
 }
 
-function Pillar({ position, texture }: { position: [number, number, number]; texture: THREE.CanvasTexture }) {
-  return (
-    <group position={position}>
-      <mesh>
-        <cylinderGeometry args={[0.4, 0.5, 6, 6]} />
-        <meshStandardMaterial map={texture} color="#d6d2c8" emissive="#181818" emissiveIntensity={0.22} roughness={0.8} metalness={0.2} />
-      </mesh>
-      <mesh position={[0, -2.8, 0]}>
-        <boxGeometry args={[1.2, 0.4, 1.2]} />
-        <meshStandardMaterial map={texture} color="#d6d2c8" emissive="#181818" emissiveIntensity={0.22} roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 2.8, 0]}>
-        <boxGeometry args={[1.2, 0.4, 1.2]} />
-        <meshStandardMaterial map={texture} color="#d6d2c8" emissive="#181818" emissiveIntensity={0.22} roughness={0.8} />
-      </mesh>
-    </group>
-  );
-}
-
-function CeilingLight({ position }: { position: [number, number, number]; withShadow?: boolean }) {
-  const flickerRef = useRef<THREE.PointLight>(null);
-  const meshRef = useRef<THREE.Mesh>(null);
+function CeilingLight({ position, hazard }: { position: [number, number, number]; hazard: MazeCell["hazard"] }) {
+  const lightRef = useRef<THREE.PointLight>(null);
   const stateRef = useRef({
-    baseIntensity: 1.1 + Math.random() * 0.5,
+    baseIntensity: hazard === "dark" ? 0.55 : hazard === "alarm" ? 1.3 : 1.0,
     flickerTimer: 0,
-    flickerInterval: 3 + Math.random() * 10,
-    isFlickering: Math.random() > 0.85,
+    flickerInterval: 1.5 + ((position[0] * 13 + position[2] * 7) % 9),
+    isFlickering: hazard === "dark" || hazard === "alarm",
   });
 
   useFrame((_, delta) => {
-    const s = stateRef.current;
-    s.flickerTimer += delta;
-
-    if (s.isFlickering && s.flickerTimer > s.flickerInterval) {
-      s.flickerTimer = 0;
-      s.flickerInterval = 0.05 + Math.random() * 0.2;
-
-      const flicker = Math.random();
-      if (flickerRef.current) {
-        flickerRef.current.intensity = flicker > 0.18 ? s.baseIntensity : Math.random() * 0.25;
+    const state = stateRef.current;
+    if (!state.isFlickering) return;
+    state.flickerTimer += delta;
+    if (state.flickerTimer > state.flickerInterval) {
+      state.flickerTimer = 0;
+      state.flickerInterval = 0.08 + Math.abs(Math.sin(position[0] + position[2] + state.flickerTimer)) * 0.22;
+      if (lightRef.current) {
+        const blink = Math.abs(Math.sin(Date.now() * 0.013 + position[0]));
+        lightRef.current.intensity = blink > 0.18 ? state.baseIntensity : 0.15;
       }
-
-      if (Math.random() > 0.9) {
-        s.flickerInterval = 1 + Math.random() * 5;
-      }
+      if (Math.random() > 0.82) state.flickerInterval = 1.5 + Math.random() * 4;
     }
   });
+
+  const color = hazard === "alarm" ? "#ffb0a0" : "#fff1c4";
 
   return (
     <group position={position}>
       <mesh>
-        <boxGeometry args={[1.5, 0.1, 0.4]} />
+        <boxGeometry args={[2.4, 0.12, 0.45]} />
         <meshStandardMaterial color="#1a1a1a" roughness={0.6} metalness={0.8} />
       </mesh>
-      <mesh ref={meshRef} position={[0, -0.06, 0]}>
-        <boxGeometry args={[1.3, 0.02, 0.3]} />
-        <meshStandardMaterial
-          color="#ffffcc"
-          emissive="#ffffcc"
-          emissiveIntensity={1.8}
-          roughness={0.1}
-        />
+      <mesh position={[0, -0.08, 0]}>
+        <boxGeometry args={[2, 0.03, 0.34]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.1} roughness={0.1} />
       </mesh>
-      <pointLight
-        ref={flickerRef}
-        color="#ffe8b0"
-        intensity={stateRef.current.baseIntensity}
-        distance={14}
-        decay={2}
-        castShadow={false}
-      />
+      <pointLight ref={lightRef} color={color} intensity={stateRef.current.baseIntensity} distance={12} decay={1.8} castShadow={false} />
     </group>
   );
 }
 
-function Pipe({ from, to, texture }: { from: [number, number, number]; to: [number, number, number]; texture: THREE.CanvasTexture }) {
-  const mid: [number, number, number] = [
-    (from[0] + to[0]) / 2,
-    (from[1] + to[1]) / 2,
-    (from[2] + to[2]) / 2,
-  ];
-  const len = Math.sqrt(
-    (to[0] - from[0]) ** 2 + (to[1] - from[1]) ** 2 + (to[2] - from[2]) ** 2
-  );
-  const dir = new THREE.Vector3(to[0] - from[0], to[1] - from[1], to[2] - from[2]).normalize();
-  const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-
+function Pipe({ position, rotation = [0, 0, 0], length, texture }: { position: [number, number, number]; rotation?: [number, number, number]; length: number; texture: THREE.CanvasTexture }) {
   return (
-    <mesh position={mid} quaternion={quat}>
-      <cylinderGeometry args={[0.08, 0.08, len, 6]} />
-      <meshStandardMaterial map={texture} roughness={0.5} metalness={0.7} />
+    <mesh position={position} rotation={rotation}>
+      <cylinderGeometry args={[0.09, 0.09, length, 6]} />
+      <meshStandardMaterial map={texture} color="#c8b7a0" roughness={0.48} metalness={0.65} emissive="#15100b" emissiveIntensity={0.12} />
     </mesh>
   );
 }
 
-function Vent({ position, rotation }: { position: [number, number, number]; rotation?: [number, number, number] }) {
+function CrateCluster({ cell, texture }: { cell: MazeCell; texture: THREE.CanvasTexture }) {
+  const count = cell.hazard === "clutter" ? 4 : 2;
   return (
-    <group position={position} rotation={rotation}>
+    <group>
+      {Array.from({ length: count }).map((_, index) => {
+        const side = index % 2 === 0 ? -1 : 1;
+        const offset = 2.1 + (index % 3) * 0.7;
+        return (
+          <mesh key={index} position={[cell.worldX + side * offset, 0.55 + index * 0.08, cell.worldZ + 2.8 - index * 0.9]} rotation={[0, index * 0.4, 0]}>
+            <boxGeometry args={[1.2, 1.1, 1.2]} />
+            <meshStandardMaterial map={texture} color="#c4aa87" roughness={0.75} metalness={0.15} emissive="#181006" emissiveIntensity={0.08} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function BloodStain({ cell }: { cell: MazeCell }) {
+  const scale = 0.8 + (cell.templateId % 5) * 0.28;
+  return (
+    <mesh position={[cell.worldX - 1.6 + (cell.templateId % 3), 0.035, cell.worldZ + 1.5]} rotation={[-Math.PI / 2, 0, cell.templateId * 0.7]}>
+      <circleGeometry args={[scale, 12]} />
+      <meshBasicMaterial color="#4b0000" transparent opacity={0.62} />
+    </mesh>
+  );
+}
+
+function CellLabel({ cell }: { cell: MazeCell }) {
+  return (
+    <group position={[cell.worldX, 0.04, cell.worldZ]} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh>
-        <boxGeometry args={[1, 0.8, 0.05]} />
-        <meshStandardMaterial color="#1a1a24" roughness={0.7} metalness={0.5} />
+        <ringGeometry args={[0.8, 0.86, 12]} />
+        <meshBasicMaterial color={cell.story === "deep" ? "#6633ff" : cell.story === "medical" ? "#55ffdd" : "#2244ff"} transparent opacity={0.28} side={THREE.DoubleSide} />
       </mesh>
-      {[-0.3, -0.1, 0.1, 0.3].map((y, i) => (
-        <mesh key={i} position={[0, y, 0.03]}>
-          <boxGeometry args={[0.9, 0.06, 0.1]} />
-          <meshStandardMaterial color="#111118" roughness={0.6} metalness={0.6} />
-        </mesh>
-      ))}
     </group>
   );
 }
 
-function BloodStain({ position }: { position: [number, number, number] }) {
-  const size = 0.5 + Math.random() * 1.5;
+function CellDecor({ cell, metal }: { cell: MazeCell; metal: THREE.CanvasTexture }) {
   return (
-    <mesh position={[position[0], 0.01, position[2]]} rotation={[-Math.PI / 2, 0, Math.random() * Math.PI * 2]}>
-      <circleGeometry args={[size, 8]} />
-      <meshStandardMaterial
-        color="#3a0000"
-        roughness={1}
-        transparent
-        opacity={0.7 + Math.random() * 0.3}
-      />
-    </mesh>
+    <group>
+      <CellLabel cell={cell} />
+      {(cell.hazard === "clutter" || cell.story === "storage" || cell.templateId % 7 === 0) && <CrateCluster cell={cell} texture={metal} />}
+      {(cell.hazard === "pipes" || cell.story === "maintenance" || cell.story === "industrial") && (
+        <>
+          <Pipe position={[cell.worldX - 2.8, 5.45, cell.worldZ]} rotation={[0, 0, Math.PI / 2]} length={4.4} texture={metal} />
+          <Pipe position={[cell.worldX + 2.8, 5.25, cell.worldZ + 1.5]} rotation={[Math.PI / 2, 0, 0]} length={4.8} texture={metal} />
+        </>
+      )}
+      {(cell.hazard === "blood" || cell.templateId % 11 === 0) && <BloodStain cell={cell} />}
+      {cell.hazard === "alarm" && (
+        <mesh position={[cell.worldX, 2.2, cell.worldZ - 4.4]}>
+          <boxGeometry args={[0.5, 0.5, 0.18]} />
+          <meshStandardMaterial color="#ff3322" emissive="#ff2200" emissiveIntensity={1.5} roughness={0.3} />
+        </mesh>
+      )}
+    </group>
   );
 }
 
-function ExtractionZone() {
+function ExtractionZone({ position }: { position: THREE.Vector3 }) {
   const ringRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.PointLight>(null);
   const tRef = useRef(0);
 
   useFrame((_, delta) => {
     tRef.current += delta;
-    if (ringRef.current) {
-      ringRef.current.rotation.z = tRef.current * 0.5;
-    }
-    if (glowRef.current) {
-      glowRef.current.intensity = 1 + Math.sin(tRef.current * 3) * 0.4;
-    }
+    if (ringRef.current) ringRef.current.rotation.z = tRef.current * 0.65;
+    if (glowRef.current) glowRef.current.intensity = 1.2 + Math.sin(tRef.current * 3) * 0.35;
   });
 
   return (
-    <group position={[0, 0.01, 0]}>
+    <group position={[position.x, 0.05, position.z]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[3.5, 24]} />
-        <meshStandardMaterial
-          color="#003300"
-          emissive="#002200"
-          emissiveIntensity={0.5}
-          transparent
-          opacity={0.6}
-        />
+        <circleGeometry args={[3.4, 24]} />
+        <meshStandardMaterial color="#003300" emissive="#003a00" emissiveIntensity={0.8} transparent opacity={0.64} />
       </mesh>
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[3, 3.5, 24]} />
-        <meshStandardMaterial
-          color="#00ff00"
-          emissive="#00ff00"
-          emissiveIntensity={1}
-          transparent
-          opacity={0.9}
-          side={THREE.DoubleSide}
-        />
+        <ringGeometry args={[2.65, 3.35, 24]} />
+        <meshStandardMaterial color="#00ff00" emissive="#00ff00" emissiveIntensity={1.6} transparent opacity={0.92} side={THREE.DoubleSide} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[2, 2.1, 4]} />
-        <meshStandardMaterial
-          color="#00ff00"
-          emissive="#00ff00"
-          emissiveIntensity={2}
-          transparent
-          opacity={0.8}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <pointLight ref={glowRef} color="#00ff00" intensity={0.8} distance={8} />
+      <pointLight ref={glowRef} color="#00ff88" intensity={1.2} distance={11} />
     </group>
   );
 }
 
-const BLOOD_POSITIONS: [number, number, number][] = [
-  [5, 0, -10], [-8, 0, 15], [20, 0, 5], [-15, 0, -20],
-  [30, 0, -5], [-25, 0, 10], [10, 0, 25], [-5, 0, -30],
-];
-
-const PIPE_RUNS: Array<[[number, number, number], [number, number, number]]> = [
-  [[-35, 5.5, -10], [35, 5.5, -10]],
-  [[-35, 5.2, 15], [20, 5.2, 15]],
-  [[-10, 5.5, -35], [-10, 5.5, 35]],
-  [[20, 5.3, -35], [20, 5.3, 20]],
-];
-
-const VENT_POSITIONS: Array<{ position: [number, number, number]; rotation?: [number, number, number] }> = [
-  { position: [-34.4, 2.5, -15], rotation: [0, Math.PI / 2, 0] },
-  { position: [34.4, 2.5, 10], rotation: [0, -Math.PI / 2, 0] },
-  { position: [5, 2.5, -34.4] },
-  { position: [-20, 2.5, 34.4], rotation: [0, Math.PI, 0] },
-];
-
-const LIGHT_POSITIONS: [number, number, number][] = [
-  [0, 5.85, 0], [-15, 5.85, -15], [15, 5.85, 15],
-  [-20, 5.85, 10], [20, 5.85, -10], [0, 5.85, -20],
-  [0, 5.85, 20], [-30, 5.85, 0], [30, 5.85, 0],
-  [-15, 5.85, 20], [15, 5.85, -20], [-5, 5.85, -30],
-];
-
-const PILLAR_POSITIONS: [number, number, number][] = [
-  [-20, 3, -20], [20, 3, -20], [-20, 3, 20], [20, 3, 20],
-  [-10, 3, -10], [10, 3, -10], [-10, 3, 10], [10, 3, 10],
-  [-30, 3, 0], [30, 3, 0], [0, 3, -30], [0, 3, 30],
-  [-25, 3, 15], [25, 3, -15],
-];
-
-const WALL_DEFINITIONS: Array<{ position: [number, number, number]; size: [number, number, number] }> = [
-  { position: [0, 3, -35], size: [70, 6, 1] },
-  { position: [0, 3, 35], size: [70, 6, 1] },
-  { position: [-35, 3, 0], size: [1, 6, 70] },
-  { position: [35, 3, 0], size: [1, 6, 70] },
-  { position: [-15, 3, -10], size: [20, 6, 1] },
-  { position: [15, 3, 10], size: [20, 6, 1] },
-  { position: [-10, 3, 15], size: [1, 6, 15] },
-  { position: [10, 3, -15], size: [1, 6, 15] },
-  { position: [-25, 3, -25], size: [10, 6, 1] },
-  { position: [25, 3, 25], size: [10, 6, 1] },
-  { position: [-25, 3, 0], size: [1, 6, 12] },
-  { position: [25, 3, 0], size: [1, 6, 12] },
-  { position: [0, 3, -20], size: [1, 6, 10] },
-  { position: [-5, 3, 20], size: [8, 6, 1] },
-];
+function ElevatorPad({ position }: { position: THREE.Vector3 }) {
+  return (
+    <group position={[position.x, 0.04, position.z]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[3.2, 24]} />
+        <meshStandardMaterial color="#0a2630" emissive="#00aaff" emissiveIntensity={0.55} transparent opacity={0.52} />
+      </mesh>
+      <mesh position={[0, 1.2, -4.65]}>
+        <boxGeometry args={[5, 2.4, 0.25]} />
+        <meshStandardMaterial color="#18212a" roughness={0.7} metalness={0.4} emissive="#061018" emissiveIntensity={0.35} />
+      </mesh>
+    </group>
+  );
+}
 
 export function FacilityMap() {
+  const mazeLayout = useGameStore((s) => s.mazeLayout);
   const { floor, concrete, metal, ceiling, concreteNormal } = useTextures();
+
+  if (!mazeLayout) return null;
+
+  const wallHeight = 5.4;
+  const wallThickness = 0.42;
+  const cellSize = mazeLayout.cellSize;
+  const wallLength = cellSize + wallThickness;
 
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[70, 70, 20, 20]} />
-        <meshStandardMaterial
-          map={floor}
-          color="#e0ded2"
-          emissive="#202020"
-          emissiveIntensity={0.32}
-          roughness={0.9}
-          metalness={0.05}
-        />
-      </mesh>
-
-      <mesh position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[70, 70, 10, 10]} />
-        <meshStandardMaterial
-          map={ceiling}
-          color="#d0d0c8"
-          emissive="#15171a"
-          emissiveIntensity={0.2}
-          roughness={1}
-          metalness={0}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-
-      {WALL_DEFINITIONS.map((w, i) => (
-        <Wall
-          key={i}
-          position={w.position}
-          size={w.size}
-          texture={i % 3 === 0 ? metal : concrete}
-          normalMap={concreteNormal}
-        />
-      ))}
-
-      {PILLAR_POSITIONS.map((p, i) => (
-        <Pillar key={i} position={p} texture={i % 2 === 0 ? concrete : metal} />
-      ))}
-
-      {LIGHT_POSITIONS.map((p, i) => (
-        <CeilingLight key={i} position={p} />
-      ))}
-
-      {PIPE_RUNS.map((run, i) => (
-        <Pipe key={i} from={run[0]} to={run[1]} texture={metal} />
-      ))}
-
-      {VENT_POSITIONS.map((v, i) => (
-        <Vent key={i} position={v.position} rotation={v.rotation} />
-      ))}
-
-      {BLOOD_POSITIONS.map((p, i) => (
-        <BloodStain key={i} position={p} />
-      ))}
-
-      <ExtractionZone />
-
-      <mesh position={[-20, 4, -33.4]}>
-        <boxGeometry args={[4, 2, 0.3]} />
-        <meshStandardMaterial color="#111118" roughness={0.8} metalness={0.6} />
-      </mesh>
-
-      <mesh position={[20, 4, 33.4]}>
-        <boxGeometry args={[4, 2, 0.3]} />
-        <meshStandardMaterial color="#111118" roughness={0.8} metalness={0.6} />
-      </mesh>
-
-      {[-25, 0, 25].map((x, i) => (
-        <group key={i}>
-          <mesh position={[x, 1, -15]}>
-            <boxGeometry args={[1.2, 2, 0.8]} />
-            <meshStandardMaterial map={metal} roughness={0.7} metalness={0.5} />
+      {mazeLayout.cells.map((cell) => (
+        <group key={cell.id}>
+          <mesh position={[cell.worldX, 0, cell.worldZ]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[cellSize, cellSize, 2, 2]} />
+            <meshStandardMaterial map={floor} color="#e0ded2" emissive="#202020" emissiveIntensity={0.34} roughness={0.9} metalness={0.05} />
           </mesh>
-          <mesh position={[x, 0.5, -15]}>
-            <boxGeometry args={[1.4, 0.2, 1]} />
-            <meshStandardMaterial color="#111" roughness={1} />
+          <mesh position={[cell.worldX, wallHeight, cell.worldZ]} rotation={[Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[cellSize, cellSize, 1, 1]} />
+            <meshStandardMaterial map={ceiling} color="#d0d0c8" emissive="#15171a" emissiveIntensity={0.2} roughness={1} metalness={0} side={THREE.DoubleSide} />
           </mesh>
+          {!cell.open.east && <Wall position={[cell.worldX + cellSize / 2, wallHeight / 2, cell.worldZ]} size={[wallThickness, wallHeight, wallLength]} texture={cell.templateId % 3 === 0 ? metal : concrete} normalMap={concreteNormal} metal={cell.templateId % 3 === 0} />}
+          {!cell.open.south && <Wall position={[cell.worldX, wallHeight / 2, cell.worldZ + cellSize / 2]} size={[wallLength, wallHeight, wallThickness]} texture={cell.templateId % 4 === 0 ? metal : concrete} normalMap={concreteNormal} metal={cell.templateId % 4 === 0} />}
+          {cell.gridX === 0 && !cell.open.west && <Wall position={[cell.worldX - cellSize / 2, wallHeight / 2, cell.worldZ]} size={[wallThickness, wallHeight, wallLength]} texture={metal} normalMap={concreteNormal} metal />}
+          {cell.gridZ === 0 && !cell.open.north && <Wall position={[cell.worldX, wallHeight / 2, cell.worldZ - cellSize / 2]} size={[wallLength, wallHeight, wallThickness]} texture={metal} normalMap={concreteNormal} metal />}
+          {(cell.templateId + cell.gridX + cell.gridZ) % 2 === 0 && <CeilingLight position={[cell.worldX, 5.25, cell.worldZ]} hazard={cell.hazard} />}
+          <CellDecor cell={cell} metal={metal} />
         </group>
       ))}
+      <ElevatorPad position={mazeLayout.elevatorPosition} />
+      <ExtractionZone position={mazeLayout.extractionPosition} />
     </group>
   );
 }

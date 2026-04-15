@@ -25,6 +25,35 @@ export interface ScrapItem {
   collected: boolean;
 }
 
+export type MazeDirection = "north" | "east" | "south" | "west";
+
+export interface MazeCell {
+  id: string;
+  gridX: number;
+  gridZ: number;
+  worldX: number;
+  worldZ: number;
+  open: Record<MazeDirection, boolean>;
+  templateId: number;
+  templateName: string;
+  story: "office" | "storage" | "maintenance" | "medical" | "industrial" | "security" | "deep";
+  hazard: "clear" | "clutter" | "pipes" | "blood" | "dark" | "alarm";
+}
+
+export interface MazeLayout {
+  seed: number;
+  level: number;
+  width: number;
+  height: number;
+  cellSize: number;
+  cells: MazeCell[];
+  elevatorPosition: THREE.Vector3;
+  extractionPosition: THREE.Vector3;
+  scrapSpawns: THREE.Vector3[];
+  monsterSpawns: THREE.Vector3[];
+  patrolPoints: THREE.Vector3[];
+}
+
 export interface LevelConfig {
   level: number;
   floorName: string;
@@ -186,6 +215,7 @@ export interface GameState {
   totalScrapValue: number;
   currentLevel: number;
   isRespawn: boolean;
+  mazeLayout: MazeLayout | null;
 }
 
 export const INITIAL_GAME_STATE: GameState = {
@@ -201,6 +231,7 @@ export const INITIAL_GAME_STATE: GameState = {
   totalScrapValue: 0,
   currentLevel: 1,
   isRespawn: false,
+  mazeLayout: null,
 };
 
 export const MONSTER_TEMPLATES = [

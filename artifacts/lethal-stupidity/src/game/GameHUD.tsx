@@ -1,5 +1,106 @@
 import { useGameStore } from "./useGameStore";
 import { LEVEL_CONFIGS } from "./types";
+import { getMazeCell } from "./mazeGenerator";
+
+function MiniMap() {
+  const mazeLayout = useGameStore((s) => s.mazeLayout);
+  const playerPosition = useGameStore((s) => s.playerPosition);
+  const monsters = useGameStore((s) => s.monsters);
+
+  if (!mazeLayout) return null;
+
+  const currentCell = getMazeCell(mazeLayout, playerPosition.x, playerPosition.z);
+  const nearbyMonsters = monsters.filter((monster) => monster.position.distanceTo(playerPosition) < 22);
+  const elevatorVector = mazeLayout.extractionPosition.clone().sub(playerPosition);
+  const elevatorAngle = Math.atan2(elevatorVector.x, elevatorVector.z);
+  const visibleRadius = 2;
+
+  return (
+    <div style={{
+      position: "absolute",
+      right: 20,
+      bottom: 82,
+      width: 178,
+      background: "rgba(0,0,0,0.76)",
+      border: "1px solid #00ff0066",
+      borderRadius: 8,
+      padding: 10,
+      boxShadow: "0 0 20px rgba(0,255,0,0.12)",
+    }}>
+      <div style={{ fontSize: 10, color: "#66ff88", letterSpacing: 2, marginBottom: 8 }}>
+        LOCAL MAP
+      </div>
+      <div style={{ position: "relative", width: 150, height: 150, margin: "0 auto", border: "1px solid #113311", background: "#020602" }}>
+        {mazeLayout.cells.map((cell) => {
+          if (!currentCell) return null;
+          const dx = cell.gridX - currentCell.gridX;
+          const dz = cell.gridZ - currentCell.gridZ;
+          if (Math.abs(dx) > visibleRadius || Math.abs(dz) > visibleRadius) return null;
+          const left = 75 + dx * 28 - 11;
+          const top = 75 + dz * 28 - 11;
+          return (
+            <div key={cell.id} style={{
+              position: "absolute",
+              left,
+              top,
+              width: 22,
+              height: 22,
+              borderTop: cell.open.north ? "1px solid #174417" : "2px solid #00ff00",
+              borderRight: cell.open.east ? "1px solid #174417" : "2px solid #00ff00",
+              borderBottom: cell.open.south ? "1px solid #174417" : "2px solid #00ff00",
+              borderLeft: cell.open.west ? "1px solid #174417" : "2px solid #00ff00",
+              background: cell.id === currentCell.id ? "rgba(0,255,0,0.22)" : "rgba(0,80,0,0.12)",
+              boxSizing: "border-box",
+            }} />
+          );
+        })}
+        <div style={{
+          position: "absolute",
+          left: 72,
+          top: 72,
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#00ffff",
+          boxShadow: "0 0 8px #00ffff",
+        }} />
+        {nearbyMonsters.map((monster) => {
+          const dx = (monster.position.x - playerPosition.x) / mazeLayout.cellSize;
+          const dz = (monster.position.z - playerPosition.z) / mazeLayout.cellSize;
+          return (
+            <div key={monster.id} style={{
+              position: "absolute",
+              left: 75 + dx * 28 - 4,
+              top: 75 + dz * 28 - 4,
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: monster.state === "chasing" ? "#ff2200" : "#ffcc00",
+              boxShadow: "0 0 10px currentColor",
+            }} />
+          );
+        })}
+        <div style={{
+          position: "absolute",
+          left: 70,
+          top: 14,
+          width: 0,
+          height: 0,
+          borderLeft: "6px solid transparent",
+          borderRight: "6px solid transparent",
+          borderBottom: "16px solid #00ff88",
+          transform: `rotate(${elevatorAngle}rad)`,
+          transformOrigin: "50% 65px",
+          filter: "drop-shadow(0 0 5px #00ff88)",
+        }} />
+      </div>
+      <div style={{ marginTop: 8, fontSize: 9, color: "#557755", lineHeight: 1.5 }}>
+        Arrow points to elevator/extract<br />
+        Monsters only show nearby
+      </div>
+    </div>
+  );
+}
 
 export function GameHUD() {
   const health = useGameStore((s) => s.health);
@@ -11,13 +112,15 @@ export function GameHUD() {
   const flashlightOn = useGameStore((s) => s.flashlightOn);
   const playerPosition = useGameStore((s) => s.playerPosition);
   const currentLevel = useGameStore((s) => s.currentLevel);
+  const mazeLayout = useGameStore((s) => s.mazeLayout);
   const levelConfig = LEVEL_CONFIGS[Math.min(currentLevel - 1, LEVEL_CONFIGS.length - 1)];
 
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = Math.floor(timeRemaining % 60);
   const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
-  const nearExtract = Math.sqrt(playerPosition.x ** 2 + playerPosition.z ** 2) < 4;
+  const extractionPosition = mazeLayout?.extractionPosition;
+  const nearExtract = extractionPosition ? playerPosition.distanceTo(extractionPosition) < 4.5 : Math.sqrt(playerPosition.x ** 2 + playerPosition.z ** 2) < 4;
   const canExtract = nearExtract && scrapCollected >= scrapQuota;
 
   const noiseBars = Math.floor(noiseLevel * 10);
@@ -152,6 +255,8 @@ export function GameHUD() {
         Mouse - Look | F - Flashlight<br />
         E - Extract (at green circle)
       </div>
+
+      <MiniMap />
 
       <div style={{
         position: "absolute",
