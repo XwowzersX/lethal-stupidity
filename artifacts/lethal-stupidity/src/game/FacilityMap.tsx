@@ -34,8 +34,11 @@ function Wall({ position, size, texture, normalMap }: WallProps) {
       <boxGeometry args={size} />
       <meshStandardMaterial
         map={texture}
+        color="#d8d8d0"
         normalMap={normalMap}
         normalScale={new THREE.Vector2(0.35, 0.35)}
+        emissive="#1d1f22"
+        emissiveIntensity={0.28}
         roughness={0.9}
         metalness={0.05}
       />
@@ -48,15 +51,15 @@ function Pillar({ position, texture }: { position: [number, number, number]; tex
     <group position={position}>
       <mesh>
         <cylinderGeometry args={[0.4, 0.5, 6, 6]} />
-        <meshStandardMaterial map={texture} roughness={0.8} metalness={0.2} />
+        <meshStandardMaterial map={texture} color="#d6d2c8" emissive="#181818" emissiveIntensity={0.22} roughness={0.8} metalness={0.2} />
       </mesh>
       <mesh position={[0, -2.8, 0]}>
         <boxGeometry args={[1.2, 0.4, 1.2]} />
-        <meshStandardMaterial map={texture} roughness={0.8} />
+        <meshStandardMaterial map={texture} color="#d6d2c8" emissive="#181818" emissiveIntensity={0.22} roughness={0.8} />
       </mesh>
       <mesh position={[0, 2.8, 0]}>
         <boxGeometry args={[1.2, 0.4, 1.2]} />
-        <meshStandardMaterial map={texture} roughness={0.8} />
+        <meshStandardMaterial map={texture} color="#d6d2c8" emissive="#181818" emissiveIntensity={0.22} roughness={0.8} />
       </mesh>
     </group>
   );
@@ -283,15 +286,21 @@ export function FacilityMap() {
         <planeGeometry args={[70, 70, 20, 20]} />
         <meshStandardMaterial
           map={floor}
+          color="#e0ded2"
+          emissive="#202020"
+          emissiveIntensity={0.32}
           roughness={0.9}
           metalness={0.05}
         />
       </mesh>
 
-      <mesh receiveShadow position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[70, 70, 10, 10]} />
         <meshStandardMaterial
           map={ceiling}
+          color="#d0d0c8"
+          emissive="#15171a"
+          emissiveIntensity={0.2}
           roughness={1}
           metalness={0}
           side={THREE.DoubleSide}

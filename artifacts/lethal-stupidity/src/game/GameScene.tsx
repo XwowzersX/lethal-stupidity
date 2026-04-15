@@ -122,14 +122,16 @@ export function GameScene() {
           gl={{
             antialias: false,
             toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 0.9,
+            toneMappingExposure: 1.25,
             powerPreference: "high-performance",
           }}
           style={{ width: "100%", height: "100%" }}
         >
-          <ambientLight intensity={0.38} color="#8fa4d8" />
-          <hemisphereLight args={["#c8d8ff", "#151820", 0.5]} />
-          <fog attach="fog" args={["#070a10", 10, 34]} />
+          <color attach="background" args={["#070a10"]} />
+          <ambientLight intensity={0.72} color="#b5c4ee" />
+          <hemisphereLight args={["#dce7ff", "#252833", 0.95]} />
+          <directionalLight position={[8, 12, 6]} intensity={0.7} color="#d7e2ff" castShadow={false} />
+          <fog attach="fog" args={["#080b12", 14, 42]} />
 
           <FacilityMap />
           <DustParticles />
