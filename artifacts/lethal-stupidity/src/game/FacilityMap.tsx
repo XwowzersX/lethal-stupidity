@@ -66,10 +66,10 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
   const flickerRef = useRef<THREE.PointLight>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const stateRef = useRef({
-    baseIntensity: 1.5 + Math.random() * 1.5,
+    baseIntensity: 2.2 + Math.random() * 1.2,
     flickerTimer: 0,
-    flickerInterval: 2 + Math.random() * 8,
-    isFlickering: Math.random() > 0.7,
+    flickerInterval: 3 + Math.random() * 10,
+    isFlickering: Math.random() > 0.85,
   });
 
   useFrame((_, delta) => {
@@ -82,11 +82,7 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
 
       const flicker = Math.random();
       if (flickerRef.current) {
-        flickerRef.current.intensity = flicker > 0.3 ? s.baseIntensity : Math.random() * 0.3;
-      }
-      if (meshRef.current) {
-        const mat = meshRef.current.material as THREE.MeshStandardMaterial;
-        mat.emissiveIntensity = flicker > 0.3 ? 0.8 : 0.05;
+        flickerRef.current.intensity = flicker > 0.18 ? s.baseIntensity : Math.random() * 0.25;
       }
 
       if (Math.random() > 0.9) {
@@ -106,7 +102,7 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
         <meshStandardMaterial
           color="#ffffcc"
           emissive="#ffffcc"
-          emissiveIntensity={0.8}
+          emissiveIntensity={1.25}
           roughness={0.1}
         />
       </mesh>

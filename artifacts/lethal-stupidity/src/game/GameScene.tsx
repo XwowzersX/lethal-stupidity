@@ -129,8 +129,8 @@ export function GameScene() {
           }}
           style={{ width: "100%", height: "100%" }}
         >
-          <ambientLight intensity={0.04} color="#1a2244" />
-          <fog attach="fog" args={["#000608", 4, 35]} />
+          <ambientLight intensity={0.08} color="#2b3558" />
+          <fog attach="fog" args={["#05070c", 6, 28]} />
 
           <FacilityMap />
           <DustParticles />

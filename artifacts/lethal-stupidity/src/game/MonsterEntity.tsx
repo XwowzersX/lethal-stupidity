@@ -84,10 +84,7 @@ export function MonsterEntity({ monster }: { monster: Monster }) {
 
     group.position.set(monster.position.x, monster.position.y, monster.position.z);
 
-    const target =
-      monster.state === "chasing" || monster.state === "alerted"
-        ? monster.patrolTarget
-        : monster.patrolTarget;
+    const target = monster.patrolTarget;
 
     if (target) {
       const dir = new THREE.Vector3().subVectors(target, monster.position);
@@ -102,11 +99,11 @@ export function MonsterEntity({ monster }: { monster: Monster }) {
     if (monster.state === "chasing") {
       const bounce = Math.abs(Math.sin(t * 10)) * 0.25;
       group.position.y = monster.position.y + bounce;
-      group.rotation.z = Math.sin(t * 8) * 0.15;
+      group.rotation.z = Math.sin(t * 8) * 0.08;
     } else if (monster.state === "alerted") {
-      group.rotation.z = Math.sin(t * 4) * 0.08;
+      group.rotation.z = Math.sin(t * 4) * 0.04;
     } else {
-      group.rotation.z = Math.sin(t * 1.5) * 0.03;
+      group.rotation.z = Math.sin(t * 1.5) * 0.015;
     }
   });
 
