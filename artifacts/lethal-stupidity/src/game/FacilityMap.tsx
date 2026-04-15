@@ -47,7 +47,7 @@ function Pillar({ position, texture }: { position: [number, number, number]; tex
   return (
     <group position={position}>
       <mesh castShadow receiveShadow>
-        <cylinderGeometry args={[0.4, 0.5, 6, 10]} />
+        <cylinderGeometry args={[0.4, 0.5, 6, 6]} />
         <meshStandardMaterial map={texture} roughness={0.8} metalness={0.2} />
       </mesh>
       <mesh position={[0, -2.8, 0]} castShadow receiveShadow>
@@ -116,10 +116,7 @@ function CeilingLight({ position, withShadow = false }: { position: [number, num
         intensity={stateRef.current.baseIntensity}
         distance={18}
         decay={2}
-        castShadow={withShadow}
-        shadow-mapSize-width={256}
-        shadow-mapSize-height={256}
-        shadow-bias={-0.01}
+        castShadow={false}
       />
     </group>
   );
@@ -195,7 +192,7 @@ function ExtractionZone() {
   return (
     <group position={[0, 0.01, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[3.5, 64]} />
+        <circleGeometry args={[3.5, 24]} />
         <meshStandardMaterial
           color="#003300"
           emissive="#002200"
@@ -205,7 +202,7 @@ function ExtractionZone() {
         />
       </mesh>
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[3, 3.5, 64]} />
+        <ringGeometry args={[3, 3.5, 24]} />
         <meshStandardMaterial
           color="#00ff00"
           emissive="#00ff00"

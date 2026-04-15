@@ -11,6 +11,7 @@ export function PlayerController() {
   const velocity = useRef(new THREE.Vector3());
   const playerPos = useRef(new THREE.Vector3(0, 1.6, 0));
 
+  const frameCount = useRef(0);
   const phase = useGameStore((s) => s.phase);
   const updatePlayerPosition = useGameStore((s) => s.updatePlayerPosition);
   const toggleFlashlight = useGameStore((s) => s.toggleFlashlight);
@@ -81,7 +82,10 @@ export function PlayerController() {
     playerPos.current.y = 1.6;
 
     camera.position.copy(playerPos.current);
-    updatePlayerPosition(playerPos.current.clone());
+    frameCount.current++;
+    if (frameCount.current % 3 === 0) {
+      updatePlayerPosition(playerPos.current.clone());
+    }
 
     for (const item of scrapItems) {
       if (!item.collected) {

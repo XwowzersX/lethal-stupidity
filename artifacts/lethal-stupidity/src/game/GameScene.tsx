@@ -118,11 +118,14 @@ export function GameScene() {
       }}>
         <Canvas
           shadows={{ type: THREE.PCFShadowMap }}
-          camera={{ fov: 80, near: 0.05, far: 120, position: [0, 1.6, 0] }}
+          camera={{ fov: 80, near: 0.05, far: 100, position: [0, 1.6, 0] }}
+          dpr={[0.75, 1.5]}
+          performance={{ min: 0.5 }}
           gl={{
-            antialias: true,
+            antialias: false,
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 0.6,
+            powerPreference: "high-performance",
           }}
           style={{ width: "100%", height: "100%" }}
         >
