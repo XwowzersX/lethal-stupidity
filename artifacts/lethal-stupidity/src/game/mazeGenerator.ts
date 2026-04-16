@@ -231,18 +231,30 @@ export function getMazeCell(layout: MazeLayout, worldX: number, worldZ: number):
 }
 
 export function canMoveThrough(layout: MazeLayout, from: THREE.Vector3, to: THREE.Vector3) {
-  const margin = layout.cellSize * 0.46;
+  const playerRadius = layout.cellSize * 0.045;
+  const halfSize = layout.cellSize / 2;
+  const interiorLimit = halfSize - playerRadius;
   const fromCell = getMazeCell(layout, from.x, from.z);
   const toCell = getMazeCell(layout, to.x, to.z);
   if (!fromCell || !toCell) return false;
   if (fromCell.id === toCell.id) {
-    return Math.abs(to.x - toCell.worldX) < margin && Math.abs(to.z - toCell.worldZ) < margin;
+    const localX = to.x - fromCell.worldX;
+    const localZ = to.z - fromCell.worldZ;
+    const insideInterior = Math.abs(localX) <= interiorLimit && Math.abs(localZ) <= interiorLimit;
+    if (insideInterior) return true;
+
+    if (localX > interiorLimit && fromCell.open.east && Math.abs(localZ) <= interiorLimit) return true;
+    if (localX < -interiorLimit && fromCell.open.west && Math.abs(localZ) <= interiorLimit) return true;
+    if (localZ > interiorLimit && fromCell.open.south && Math.abs(localX) <= interiorLimit) return true;
+    if (localZ < -interiorLimit && fromCell.open.north && Math.abs(localX) <= interiorLimit) return true;
+
+    return false;
   }
   const dx = toCell.gridX - fromCell.gridX;
   const dz = toCell.gridZ - fromCell.gridZ;
   if (Math.abs(dx) + Math.abs(dz) !== 1) return false;
-  if (dx === 1) return fromCell.open.east;
-  if (dx === -1) return fromCell.open.west;
-  if (dz === 1) return fromCell.open.south;
-  return fromCell.open.north;
+  if (dx === 1) return fromCell.open.east && Math.abs(to.z - fromCell.worldZ) <= interiorLimit;
+  if (dx === -1) return fromCell.open.west && Math.abs(to.z - fromCell.worldZ) <= interiorLimit;
+  if (dz === 1) return fromCell.open.south && Math.abs(to.x - fromCell.worldX) <= interiorLimit;
+  return fromCell.open.north && Math.abs(to.x - fromCell.worldX) <= interiorLimit;
 }
