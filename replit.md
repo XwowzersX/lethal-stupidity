@@ -53,10 +53,11 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 - **Provider**: Clerk (provisioned via Replit Auth pane)
 - **Frontend**: `@clerk/react` + `wouter` (client-side routing) + `@tanstack/react-query` (server state)
 - **Backend**: `@clerk/express` + `@workspace/db` Drizzle ORM
-- **Flow**: Auth screen on load → "Sign In", "Create Account" (Clerk), or "Continue as Temp Worker" (guest, sessionStorage)
+- **Flow**: Auth screen on load → "Sign In", custom multi-step "Create Account" (email + username, email code verification, then password confirmation), or "Continue as Temp Worker" (guest, sessionStorage)
 - **Save slots**: 5 per user account stored in `save_slots` PostgreSQL table; guests get no saves
 - **Key env vars**: `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` (Replit secrets); explicitly defined in `vite.config.ts`
-- Clerk development keys have been provisioned through the built-in auth setup so `/sign-in` and `/sign-up` render live account forms in development.
+- Clerk development keys have been provisioned through the built-in auth setup so `/sign-in` renders the live account form in development; `/sign-up` uses a custom Clerk-powered registration flow.
+- The development PostgreSQL database is provisioned with the `save_slots` table and a unique `(user_id, slot)` index for account save slots.
 
 ## API Server
 

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from "@clerk/react";
+import { ClerkProvider, SignIn, useAuth, useClerk, useUser } from "@clerk/react";
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -9,6 +9,7 @@ import { ElevatorScene } from "./game/ElevatorScene";
 import { DeathScreen } from "./game/DeathScreen";
 import { ExtractScreen } from "./game/ExtractScreen";
 import { useGameStore } from "./game/useGameStore";
+import { CustomSignUp } from "./auth/CustomSignUp";
 
 const GameScene = lazy(() =>
   import("./game/GameScene").then((m) => ({ default: m.GameScene })),
@@ -78,11 +79,9 @@ function SignInPage() {
 }
 
 function SignUpPage() {
-  // To update login providers, app branding, or OAuth settings use the Auth
-  // pane in the workspace toolbar. More information can be found in the Replit docs.
   return (
     <AuthPageWrapper subtitle="REGISTER">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <CustomSignUp />
     </AuthPageWrapper>
   );
 }
@@ -107,6 +106,7 @@ function GameApp() {
   const { user } = useUser();
   const phase = useGameStore((s) => s.phase);
   const [guestMode, setGuestMode] = useState(() => sessionStorage.getItem("ls_guest") === "1");
+  const workerUsername = typeof user?.unsafeMetadata?.workerUsername === "string" ? user.unsafeMetadata.workerUsername : undefined;
 
   useEffect(() => {
     if (isSignedIn) sessionStorage.removeItem("ls_guest");
@@ -132,7 +132,7 @@ function GameApp() {
       {phase === "menu" && (
         <MenuScreen
           isGuest={!isSignedIn}
-          userName={user?.firstName ?? user?.username ?? undefined}
+          userName={user?.firstName ?? user?.username ?? workerUsername ?? undefined}
           onBack={!isSignedIn ? () => { sessionStorage.removeItem("ls_guest"); setGuestMode(false); } : undefined}
           onSignOut={() => signOut()}
         />
