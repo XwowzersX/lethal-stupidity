@@ -60,4 +60,4 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 - `App.tsx` only lazy-loads the 3D game scene after gameplay begins so the menu can load reliably in the preview before WebGL is needed.
 - Gameplay lighting is intentionally optimized for the browser preview: shadows are disabled, scrap/monster indicator point lights are avoided, and the flashlight stays mounted while its intensity changes to prevent multi-second WebGL shader stalls.
 - Each level now keeps its existing quota/time/monster difficulty but generates a fresh connected maze layout when the floor starts; B1 stays smaller and safer, while later floors become larger and denser.
-- Maze openings render as narrower hallway thresholds, and decorative storage cubes/crates now share collision with the movement system.
+- Normal maze openings stay wide and open; some closed walls now include low crouch-only crawl passages, and decorative storage cubes/crates share collision with the movement system.

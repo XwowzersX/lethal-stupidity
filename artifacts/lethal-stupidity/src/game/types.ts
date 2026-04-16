@@ -34,6 +34,7 @@ export interface MazeCell {
   worldX: number;
   worldZ: number;
   open: Record<MazeDirection, boolean>;
+  crawl: Record<MazeDirection, boolean>;
   templateId: number;
   templateName: string;
   story: "office" | "storage" | "maintenance" | "medical" | "industrial" | "security" | "deep";

@@ -118,7 +118,7 @@ export function PlayerController() {
     if (mazeLayout) {
       const tryX = playerPos.current.clone();
       tryX.x = desired.x;
-      if (canMoveThrough(mazeLayout, playerPos.current, tryX)) {
+      if (canMoveThrough(mazeLayout, playerPos.current, tryX, isCrouching)) {
         playerPos.current.x = desired.x;
       } else {
         velocity.current.x = 0;
@@ -126,7 +126,7 @@ export function PlayerController() {
 
       const tryZ = playerPos.current.clone();
       tryZ.z = desired.z;
-      if (canMoveThrough(mazeLayout, playerPos.current, tryZ)) {
+      if (canMoveThrough(mazeLayout, playerPos.current, tryZ, isCrouching)) {
         playerPos.current.z = desired.z;
       } else {
         velocity.current.z = 0;

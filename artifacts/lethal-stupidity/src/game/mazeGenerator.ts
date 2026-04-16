@@ -18,7 +18,7 @@ const DIRECTIONS: Array<{
 ];
 
 const PLAYER_RADIUS = 0.45;
-const HALLWAY_HALF_WIDTH = 2.35;
+const CRAWL_PASSAGE_HALF_WIDTH = 1.35;
 
 const SEGMENT_TEMPLATES = [
   ["Reception Desk", "office", "clutter"],
@@ -87,6 +87,7 @@ function makeCell(x: number, z: number, templateId: number): MutableCell {
     gridX: x,
     gridZ: z,
     open: { north: false, east: false, south: false, west: false },
+    crawl: { north: false, east: false, south: false, west: false },
     templateId,
     templateName: template[0],
     story: template[1],
@@ -99,6 +100,12 @@ function connect(a: MutableCell, b: MutableCell, direction: MazeDirection) {
   const opposite = DIRECTIONS.find((d) => d.dir === direction)!.opposite;
   a.open[direction] = true;
   b.open[opposite] = true;
+}
+
+function connectCrawl(a: MutableCell, b: MutableCell, direction: MazeDirection) {
+  const opposite = DIRECTIONS.find((d) => d.dir === direction)!.opposite;
+  a.crawl[direction] = true;
+  b.crawl[opposite] = true;
 }
 
 function getCell(cells: MutableCell[][], x: number, z: number) {
@@ -181,6 +188,15 @@ export function generateMazeLayout(level: number): MazeLayout {
     }
   }
 
+  const crawlPassageCount = Math.max(3, Math.floor(width * height * (0.08 + level * 0.015)));
+  for (let i = 0; i < crawlPassageCount; i++) {
+    const cell = cells[Math.floor(rng() * height)][Math.floor(rng() * width)];
+    const options = shuffle(DIRECTIONS, rng)
+      .map((d) => ({ ...d, cell: getCell(cells, cell.gridX + d.dx, cell.gridZ + d.dz) }))
+      .filter((entry) => entry.cell && !cell.open[entry.dir] && !cell.crawl[entry.dir]);
+    if (options[0]) connectCrawl(cell, options[0].cell!, options[0].dir);
+  }
+
   const mazeCells: MazeCell[] = cells.flat().map((cell) => ({
     ...cell,
     worldX: cellToWorld(cell.gridX, cell.gridZ, width, height, cellSize).x,
@@ -233,7 +249,7 @@ export function getMazeCell(layout: MazeLayout, worldX: number, worldZ: number):
   return layout.cells[gridZ * layout.width + gridX] ?? null;
 }
 
-export function canMoveThrough(layout: MazeLayout, from: THREE.Vector3, to: THREE.Vector3) {
+export function canMoveThrough(layout: MazeLayout, from: THREE.Vector3, to: THREE.Vector3, isCrouching = false) {
   const playerRadius = PLAYER_RADIUS;
   const halfSize = layout.cellSize / 2;
   const interiorLimit = halfSize - playerRadius;
@@ -248,20 +264,34 @@ export function canMoveThrough(layout: MazeLayout, from: THREE.Vector3, to: THRE
     const insideInterior = Math.abs(localX) <= interiorLimit && Math.abs(localZ) <= interiorLimit;
     if (insideInterior) return true;
 
-    if (localX > interiorLimit && fromCell.open.east && Math.abs(localZ) <= HALLWAY_HALF_WIDTH) return true;
-    if (localX < -interiorLimit && fromCell.open.west && Math.abs(localZ) <= HALLWAY_HALF_WIDTH) return true;
-    if (localZ > interiorLimit && fromCell.open.south && Math.abs(localX) <= HALLWAY_HALF_WIDTH) return true;
-    if (localZ < -interiorLimit && fromCell.open.north && Math.abs(localX) <= HALLWAY_HALF_WIDTH) return true;
+    if (localX > interiorLimit && fromCell.open.east && Math.abs(localZ) <= interiorLimit) return true;
+    if (localX < -interiorLimit && fromCell.open.west && Math.abs(localZ) <= interiorLimit) return true;
+    if (localZ > interiorLimit && fromCell.open.south && Math.abs(localX) <= interiorLimit) return true;
+    if (localZ < -interiorLimit && fromCell.open.north && Math.abs(localX) <= interiorLimit) return true;
+    if (isCrouching && localX > interiorLimit && fromCell.crawl.east && Math.abs(localZ) <= CRAWL_PASSAGE_HALF_WIDTH) return true;
+    if (isCrouching && localX < -interiorLimit && fromCell.crawl.west && Math.abs(localZ) <= CRAWL_PASSAGE_HALF_WIDTH) return true;
+    if (isCrouching && localZ > interiorLimit && fromCell.crawl.south && Math.abs(localX) <= CRAWL_PASSAGE_HALF_WIDTH) return true;
+    if (isCrouching && localZ < -interiorLimit && fromCell.crawl.north && Math.abs(localX) <= CRAWL_PASSAGE_HALF_WIDTH) return true;
 
     return false;
   }
   const dx = toCell.gridX - fromCell.gridX;
   const dz = toCell.gridZ - fromCell.gridZ;
   if (Math.abs(dx) + Math.abs(dz) !== 1) return false;
-  if (dx === 1) return fromCell.open.east && Math.abs(to.z - fromCell.worldZ) <= HALLWAY_HALF_WIDTH;
-  if (dx === -1) return fromCell.open.west && Math.abs(to.z - fromCell.worldZ) <= HALLWAY_HALF_WIDTH;
-  if (dz === 1) return fromCell.open.south && Math.abs(to.x - fromCell.worldX) <= HALLWAY_HALF_WIDTH;
-  return fromCell.open.north && Math.abs(to.x - fromCell.worldX) <= HALLWAY_HALF_WIDTH;
+  if (dx === 1) {
+    return (fromCell.open.east && Math.abs(to.z - fromCell.worldZ) <= interiorLimit) ||
+      (isCrouching && fromCell.crawl.east && Math.abs(to.z - fromCell.worldZ) <= CRAWL_PASSAGE_HALF_WIDTH);
+  }
+  if (dx === -1) {
+    return (fromCell.open.west && Math.abs(to.z - fromCell.worldZ) <= interiorLimit) ||
+      (isCrouching && fromCell.crawl.west && Math.abs(to.z - fromCell.worldZ) <= CRAWL_PASSAGE_HALF_WIDTH);
+  }
+  if (dz === 1) {
+    return (fromCell.open.south && Math.abs(to.x - fromCell.worldX) <= interiorLimit) ||
+      (isCrouching && fromCell.crawl.south && Math.abs(to.x - fromCell.worldX) <= CRAWL_PASSAGE_HALF_WIDTH);
+  }
+  return (fromCell.open.north && Math.abs(to.x - fromCell.worldX) <= interiorLimit) ||
+    (isCrouching && fromCell.crawl.north && Math.abs(to.x - fromCell.worldX) <= CRAWL_PASSAGE_HALF_WIDTH);
 }
 
 export function getCellObstacleBounds(cell: MazeCell) {
