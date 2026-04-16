@@ -24,6 +24,7 @@ export function PlayerController() {
   const phase = useGameStore((s) => s.phase);
   const mazeLayout = useGameStore((s) => s.mazeLayout);
   const updatePlayerPosition = useGameStore((s) => s.updatePlayerPosition);
+  const updatePlayerYaw = useGameStore((s) => s.updatePlayerYaw);
   const updateMovementNoise = useGameStore((s) => s.updateMovementNoise);
   const toggleFlashlight = useGameStore((s) => s.toggleFlashlight);
   const collectScrap = useGameStore((s) => s.collectScrap);
@@ -182,6 +183,9 @@ export function PlayerController() {
 
     camera.position.copy(playerPos.current);
     frameCount.current++;
+    if (frameCount.current % 3 === 0) {
+      updatePlayerYaw(camera.rotation.y);
+    }
     if (frameCount.current % 6 === 0) {
       updatePlayerPosition(playerPos.current.clone());
     }

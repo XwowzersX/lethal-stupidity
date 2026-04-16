@@ -5,6 +5,7 @@ import { getMazeCell } from "./mazeGenerator";
 function MiniMap() {
   const mazeLayout = useGameStore((s) => s.mazeLayout);
   const playerPosition = useGameStore((s) => s.playerPosition);
+  const playerYaw = useGameStore((s) => s.playerYaw);
   const monsters = useGameStore((s) => s.monsters);
 
   if (!mazeLayout) return null;
@@ -13,90 +14,131 @@ function MiniMap() {
   const nearbyMonsters = monsters.filter((monster) => monster.position.distanceTo(playerPosition) < 22);
   const elevatorVector = mazeLayout.extractionPosition.clone().sub(playerPosition);
   const elevatorAngle = Math.atan2(elevatorVector.x, elevatorVector.z);
-  const visibleRadius = 2;
+  const visibleRadius = 3;
+  const cellPx = 26;
+  const center = 80;
+  const mapSize = 160;
 
   return (
     <div style={{
       position: "absolute",
       right: 20,
       bottom: 82,
-      width: 178,
-      background: "rgba(0,0,0,0.76)",
+      width: mapSize + 18,
+      background: "rgba(0,0,0,0.82)",
       border: "1px solid #00ff0066",
-      borderRadius: 8,
-      padding: 10,
+      borderRadius: 10,
+      padding: 9,
       boxShadow: "0 0 20px rgba(0,255,0,0.12)",
     }}>
-      <div style={{ fontSize: 10, color: "#66ff88", letterSpacing: 2, marginBottom: 8 }}>
+      <div style={{ fontSize: 10, color: "#66ff88", letterSpacing: 2, marginBottom: 7, textAlign: "center" }}>
         LOCAL MAP
       </div>
-      <div style={{ position: "relative", width: 150, height: 150, margin: "0 auto", border: "1px solid #113311", background: "#020602" }}>
-        {mazeLayout.cells.map((cell) => {
-          if (!currentCell) return null;
-          const dx = cell.gridX - currentCell.gridX;
-          const dz = cell.gridZ - currentCell.gridZ;
-          if (Math.abs(dx) > visibleRadius || Math.abs(dz) > visibleRadius) return null;
-          const left = 75 + dx * 28 - 11;
-          const top = 75 + dz * 28 - 11;
-          return (
-            <div key={cell.id} style={{
-              position: "absolute",
-              left,
-              top,
-              width: 22,
-              height: 22,
-              borderTop: cell.open.north ? "1px solid #174417" : "2px solid #00ff00",
-              borderRight: cell.open.east ? "1px solid #174417" : "2px solid #00ff00",
-              borderBottom: cell.open.south ? "1px solid #174417" : "2px solid #00ff00",
-              borderLeft: cell.open.west ? "1px solid #174417" : "2px solid #00ff00",
-              background: cell.id === currentCell.id ? "rgba(0,255,0,0.22)" : "rgba(0,80,0,0.12)",
-              boxSizing: "border-box",
-            }} />
-          );
-        })}
+
+      {/* Outer clip circle */}
+      <div style={{
+        position: "relative",
+        width: mapSize,
+        height: mapSize,
+        margin: "0 auto",
+        borderRadius: "50%",
+        overflow: "hidden",
+        background: "#020602",
+        border: "1px solid #1a331a",
+      }}>
+        {/* Rotating world layer — yaw rotates map so forward = up */}
         <div style={{
           position: "absolute",
-          left: 72,
-          top: 72,
-          width: 6,
-          height: 6,
+          inset: 0,
+          transform: `rotate(${-playerYaw}rad)`,
+          transformOrigin: "center",
+        }}>
+          {mazeLayout.cells.map((cell) => {
+            if (!currentCell) return null;
+            const dx = cell.gridX - currentCell.gridX;
+            const dz = cell.gridZ - currentCell.gridZ;
+            if (Math.abs(dx) > visibleRadius || Math.abs(dz) > visibleRadius) return null;
+            const left = center + dx * cellPx - cellPx / 2 + 1;
+            const top = center + dz * cellPx - cellPx / 2 + 1;
+            const w = cellPx - 2;
+            return (
+              <div key={cell.id} style={{
+                position: "absolute",
+                left,
+                top,
+                width: w,
+                height: w,
+                borderTop: cell.open.north ? "1px solid #1a4a1a" : "2px solid #00dd00",
+                borderRight: cell.open.east ? "1px solid #1a4a1a" : "2px solid #00dd00",
+                borderBottom: cell.open.south ? "1px solid #1a4a1a" : "2px solid #00dd00",
+                borderLeft: cell.open.west ? "1px solid #1a4a1a" : "2px solid #00dd00",
+                background: cell.id === currentCell.id ? "rgba(0,255,0,0.18)" : "rgba(0,60,0,0.1)",
+                boxSizing: "border-box",
+              }} />
+            );
+          })}
+
+          {/* Nearby monsters */}
+          {nearbyMonsters.map((monster) => {
+            const dx = (monster.position.x - playerPosition.x) / mazeLayout.cellSize;
+            const dz = (monster.position.z - playerPosition.z) / mazeLayout.cellSize;
+            return (
+              <div key={monster.id} style={{
+                position: "absolute",
+                left: center + dx * cellPx - 5,
+                top: center + dz * cellPx - 5,
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: monster.state === "chasing" ? "#ff2200" : "#ffcc00",
+                boxShadow: `0 0 8px ${monster.state === "chasing" ? "#ff2200" : "#ffcc00"}`,
+              }} />
+            );
+          })}
+
+          {/* Extract arrow orbiting in world-space, auto-corrected by map rotation */}
+          <div style={{
+            position: "absolute",
+            left: center - 6,
+            top: 10,
+            width: 0,
+            height: 0,
+            borderLeft: "6px solid transparent",
+            borderRight: "6px solid transparent",
+            borderBottom: "14px solid #00ff88",
+            transform: `rotate(${elevatorAngle}rad)`,
+            transformOrigin: `6px ${center - 10}px`,
+            filter: "drop-shadow(0 0 4px #00ff88)",
+          }} />
+        </div>
+
+        {/* Player dot — always centered, never rotates */}
+        <div style={{
+          position: "absolute",
+          left: center - 4,
+          top: center - 4,
+          width: 8,
+          height: 8,
           borderRadius: "50%",
           background: "#00ffff",
           boxShadow: "0 0 8px #00ffff",
+          pointerEvents: "none",
         }} />
-        {nearbyMonsters.map((monster) => {
-          const dx = (monster.position.x - playerPosition.x) / mazeLayout.cellSize;
-          const dz = (monster.position.z - playerPosition.z) / mazeLayout.cellSize;
-          return (
-            <div key={monster.id} style={{
-              position: "absolute",
-              left: 75 + dx * 28 - 4,
-              top: 75 + dz * 28 - 4,
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: monster.state === "chasing" ? "#ff2200" : "#ffcc00",
-              boxShadow: "0 0 10px currentColor",
-            }} />
-          );
-        })}
+
+        {/* Forward indicator — tiny tick at top */}
         <div style={{
           position: "absolute",
-          left: 70,
-          top: 14,
-          width: 0,
-          height: 0,
-          borderLeft: "6px solid transparent",
-          borderRight: "6px solid transparent",
-          borderBottom: "16px solid #00ff88",
-          transform: `rotate(${elevatorAngle}rad)`,
-          transformOrigin: "50% 65px",
-          filter: "drop-shadow(0 0 5px #00ff88)",
-        }} />
+          top: 4,
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontSize: 9,
+          color: "#00ff88",
+          lineHeight: 1,
+        }}>▲</div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 9, color: "#557755", lineHeight: 1.5 }}>
-        Arrow points to elevator/extract<br />
-        Monsters only show nearby
+
+      <div style={{ marginTop: 7, fontSize: 9, color: "#446644", lineHeight: 1.5, textAlign: "center" }}>
+        ▲ = forward &nbsp;◉ = extract &nbsp;● = monsters
       </div>
     </div>
   );

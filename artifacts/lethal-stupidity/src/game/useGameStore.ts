@@ -81,6 +81,7 @@ interface GameStore extends GameState {
   monsters: Monster[];
   scrapItems: ScrapItem[];
   playerPosition: THREE.Vector3;
+  playerYaw: number;
   enterElevator: (level: number, isRespawn?: boolean) => void;
   startLevel: () => void;
   nextLevel: () => void;
@@ -91,6 +92,7 @@ interface GameStore extends GameState {
   takeDamage: (amount: number, deathMsg: string) => void;
   toggleFlashlight: () => void;
   updatePlayerPosition: (pos: THREE.Vector3) => void;
+  updatePlayerYaw: (yaw: number) => void;
   updateMonsters: (delta: number) => void;
   updateTimer: (delta: number) => void;
   extract: () => void;
@@ -102,6 +104,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   monsters: [],
   scrapItems: [],
   playerPosition: new THREE.Vector3(0, 1.6, 0),
+  playerYaw: 0,
   mazeLayout: null,
 
   enterElevator: (level: number, isRespawn = false) => {
@@ -201,6 +204,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   updatePlayerPosition: (pos: THREE.Vector3) => {
     set({ playerPosition: pos });
+  },
+
+  updatePlayerYaw: (yaw: number) => {
+    set({ playerYaw: yaw });
   },
 
   updateMonsters: (delta: number) => {
