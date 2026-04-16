@@ -21,3 +21,24 @@ html, body, #root {
   background: #00ff0044;
   color: #00ff00;
 }
+
+@keyframes ls-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes progress {
+  0% { width: 0%; }
+  50% { width: 75%; }
+  100% { width: 100%; }
+}
+
+@keyframes ls-flicker {
+  0%, 97%, 100% { opacity: 1; }
+  98% { opacity: 0.7; }
+  99% { opacity: 0.95; }
+}
+
+body {
+  font-family: 'Share Tech Mono', monospace;
+}

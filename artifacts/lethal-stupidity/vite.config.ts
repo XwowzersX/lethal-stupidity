@@ -28,6 +28,14 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
+  define: {
+    "import.meta.env.VITE_CLERK_PUBLISHABLE_KEY": JSON.stringify(
+      process.env.VITE_CLERK_PUBLISHABLE_KEY ?? "",
+    ),
+    "import.meta.env.VITE_CLERK_PROXY_URL": JSON.stringify(
+      process.env.VITE_CLERK_PROXY_URL ?? "",
+    ),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -65,6 +73,12 @@ export default defineConfig({
     fs: {
       strict: true,
       deny: ["**/.*"],
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
     },
   },
   preview: {

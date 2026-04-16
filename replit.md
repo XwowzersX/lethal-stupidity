@@ -48,11 +48,29 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
   - `DeathScreen.tsx` - Death screen with tips
   - `ExtractScreen.tsx` - Victory/extraction screen
 
+## Auth System
+
+- **Provider**: Clerk (provisioned via Replit Auth pane)
+- **Frontend**: `@clerk/react` + `wouter` (client-side routing) + `@tanstack/react-query` (server state)
+- **Backend**: `@clerk/express` + `@workspace/db` Drizzle ORM
+- **Flow**: Auth screen on load → "Sign In", "Create Account" (Clerk), or "Continue as Temp Worker" (guest, sessionStorage)
+- **Save slots**: 5 per user account stored in `save_slots` PostgreSQL table; guests get no saves
+- **Key env vars**: `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` (Replit secrets); explicitly defined in `vite.config.ts`
+
+## API Server
+
+- Runs on port 8080
+- Routes: `GET /api/saves`, `POST /api/saves/:slot`, `DELETE /api/saves/:slot`
+- Clerk auth required for all save routes
+- Vite dev proxy: game's `/api/*` → API server on port 8080
+- Workflow: `artifacts/api-server: API Server`
+
 ## Key Commands
 
 - `pnpm --filter @workspace/lethal-stupidity run dev` — run game locally
 - `PORT=5173 BASE_PATH=/ pnpm --filter @workspace/lethal-stupidity run dev` — workflow command used by the Replit preview
 - `pnpm run typecheck` — full typecheck across all packages
+- `pnpm run typecheck:libs` — build lib declaration files first (needed before API server typecheck)
 
 ## Runtime Notes
 
