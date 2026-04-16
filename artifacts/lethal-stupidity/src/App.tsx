@@ -26,6 +26,30 @@ function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path;
 }
 
+function BackArrow({ to }: { to: string }) {
+  const [, setLocation] = useLocation();
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={() => setLocation(to)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: "absolute", top: 20, left: 24,
+        fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 3,
+        background: "transparent", border: "none",
+        color: hovered ? "#00ff41" : "rgba(0,255,65,0.4)",
+        cursor: "pointer", padding: "6px 10px", display: "flex", alignItems: "center", gap: 8,
+        textShadow: hovered ? "0 0 10px #00ff41" : "none",
+        transition: "all 0.15s",
+        zIndex: 20,
+      }}
+    >
+      ◂ BACK
+    </button>
+  );
+}
+
 function AuthPageWrapper({ children, subtitle }: { children: React.ReactNode; subtitle: string }) {
   return (
     <div style={{
@@ -34,6 +58,7 @@ function AuthPageWrapper({ children, subtitle }: { children: React.ReactNode; su
       fontFamily: "'Share Tech Mono', monospace", position: "relative", overflow: "hidden",
     }}>
       <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,0.012) 2px,rgba(0,255,65,0.012) 4px)", pointerEvents: "none" }} />
+      <BackArrow to="/" />
       <div style={{ marginBottom: 28, textAlign: "center" }}>
         <div style={{ fontSize: 10, color: "#00ff41", letterSpacing: 5, opacity: 0.5, marginBottom: 8 }}>THE COMPANY — EMPLOYEE PORTAL</div>
         <div style={{ fontSize: 26, fontFamily: "'Orbitron', monospace", color: "#00ff41", letterSpacing: 6, textShadow: "0 0 20px #00ff41" }}>{subtitle}</div>
@@ -107,7 +132,13 @@ function GameApp() {
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#000" }}>
-      {phase === "menu" && <MenuScreen isGuest={!isSignedIn} userName={user?.firstName ?? user?.username ?? undefined} />}
+      {phase === "menu" && (
+        <MenuScreen
+          isGuest={!isSignedIn}
+          userName={user?.firstName ?? user?.username ?? undefined}
+          onBack={!isSignedIn ? () => { sessionStorage.removeItem("ls_guest"); setGuestMode(false); } : undefined}
+        />
+      )}
       {phase === "elevator" && <ElevatorScene />}
       {phase === "playing" && (
         <Suspense fallback={<div style={{ color: "#00ff41", fontFamily: "'Share Tech Mono', monospace", padding: 24, fontSize: 12, letterSpacing: 3 }}>LOADING FACILITY...</div>}>

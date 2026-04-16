@@ -16,6 +16,7 @@ interface SaveSlot {
 interface MenuScreenProps {
   isGuest: boolean;
   userName?: string;
+  onBack?: () => void;
 }
 
 function useNoise() {
@@ -201,7 +202,29 @@ function GuestMenu({ startGame }: { startGame: () => void }) {
   );
 }
 
-export function MenuScreen({ isGuest, userName }: MenuScreenProps) {
+function BackMenuArrow({ onBack }: { onBack: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onBack}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        fontFamily: "'Share Tech Mono', monospace", fontSize: 10, letterSpacing: 3,
+        background: "transparent", border: "none",
+        color: hovered ? "#00ff41" : "rgba(0,255,65,0.4)",
+        cursor: "pointer", padding: "4px 8px",
+        textShadow: hovered ? "0 0 10px #00ff41" : "none",
+        transition: "all 0.15s",
+        whiteSpace: "nowrap",
+      }}
+    >
+      ◂ BACK
+    </button>
+  );
+}
+
+export function MenuScreen({ isGuest, userName, onBack }: MenuScreenProps) {
   const phase = useGameStore((s) => s.phase);
   const startGame = useGameStore((s) => s.startGame);
   const enterElevator = useGameStore((s) => s.enterElevator);
@@ -252,8 +275,11 @@ export function MenuScreen({ isGuest, userName }: MenuScreenProps) {
       ))}
 
       {/* Header bar */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", borderBottom: "1px solid rgba(0,255,65,0.08)", background: "rgba(0,0,0,0.4)", zIndex: 12 }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: "rgba(0,255,65,0.35)" }}>THE COMPANY — FACILITY ASSIGNMENT TERMINAL</div>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 44, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px 0 8px", borderBottom: "1px solid rgba(0,255,65,0.08)", background: "rgba(0,0,0,0.4)", zIndex: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {onBack && <BackMenuArrow onBack={onBack} />}
+          <div style={{ fontSize: 9, letterSpacing: 4, color: "rgba(0,255,65,0.35)" }}>THE COMPANY — FACILITY ASSIGNMENT TERMINAL</div>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {!isGuest && userName && (
             <div style={{ fontSize: 9, letterSpacing: 2, color: "rgba(0,255,65,0.45)" }}>
