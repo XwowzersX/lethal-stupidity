@@ -90,6 +90,7 @@ export function PlayerController() {
       grounded.current = true;
       footstepTimer.current = 0;
       footstepPulse.current = 0;
+      velocity.current.set(0, 0, 0);
       camera.position.copy(mazeLayout.elevatorPosition);
       updatePlayerPosition(mazeLayout.elevatorPosition.clone());
       updateMovementNoise(0);
@@ -99,10 +100,13 @@ export function PlayerController() {
   useFrame((_, delta) => {
     if (phase !== "playing") return;
 
+    const dt = Math.min(delta, 0.05);
+
     const wantsMove = moveState.current.forward || moveState.current.backward || moveState.current.left || moveState.current.right;
     const isCrouching = moveState.current.crouch;
     const isSprinting = moveState.current.sprint && !isCrouching;
     const speed = isCrouching ? 2.35 : isSprinting ? 8 : 5;
+
     frontVector.current.set(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward));
     sideVector.current.set(Number(moveState.current.left) - Number(moveState.current.right), 0, 0);
     direction.current
@@ -112,8 +116,13 @@ export function PlayerController() {
     direction.current.applyEuler(camera.rotation);
     direction.current.y = 0;
 
-    velocity.current.lerp(direction.current, 0.15);
-    const desired = playerPos.current.clone().addScaledVector(velocity.current, delta);
+    // Frame-rate independent exponential smoothing
+    // When moving: faster response (accel), when stopping: slightly slower (decel)
+    const accelK = wantsMove ? 14 : 9;
+    const lerpFactor = 1 - Math.exp(-accelK * dt);
+    velocity.current.lerp(direction.current, lerpFactor);
+
+    const desired = playerPos.current.clone().addScaledVector(velocity.current, dt);
 
     if (mazeLayout) {
       const tryX = playerPos.current.clone();
@@ -121,7 +130,8 @@ export function PlayerController() {
       if (canMoveThrough(mazeLayout, playerPos.current, tryX, isCrouching)) {
         playerPos.current.x = desired.x;
       } else {
-        velocity.current.x = 0;
+        // Smooth wall contact — bleed off only the blocked axis gradually
+        velocity.current.x *= 0.15;
       }
 
       const tryZ = playerPos.current.clone();
@@ -129,7 +139,7 @@ export function PlayerController() {
       if (canMoveThrough(mazeLayout, playerPos.current, tryZ, isCrouching)) {
         playerPos.current.z = desired.z;
       } else {
-        velocity.current.z = 0;
+        velocity.current.z *= 0.15;
       }
     } else {
       playerPos.current.copy(desired);
@@ -138,9 +148,10 @@ export function PlayerController() {
     const boundary = mazeLayout ? Math.max(mazeLayout.width, mazeLayout.height) * mazeLayout.cellSize : 33;
     playerPos.current.x = Math.max(-boundary, Math.min(boundary, playerPos.current.x));
     playerPos.current.z = Math.max(-boundary, Math.min(boundary, playerPos.current.z));
+
     if (!grounded.current || verticalVelocity.current !== 0) {
-      verticalVelocity.current -= 18 * delta;
-      jumpHeight.current += verticalVelocity.current * delta;
+      verticalVelocity.current -= 18 * dt;
+      jumpHeight.current += verticalVelocity.current * dt;
       if (jumpHeight.current <= 0) {
         if (!grounded.current && verticalVelocity.current < -3) {
           footstepPulse.current = Math.max(footstepPulse.current, isSprinting ? 0.55 : 0.38);
@@ -155,7 +166,7 @@ export function PlayerController() {
     playerPos.current.y = eyeHeight + jumpHeight.current;
 
     if (wantsMove && grounded.current) {
-      footstepTimer.current += delta;
+      footstepTimer.current += dt;
       const stepInterval = isCrouching ? 0.58 : isSprinting ? 0.22 : 0.36;
       if (footstepTimer.current >= stepInterval) {
         footstepTimer.current = 0;
@@ -165,7 +176,7 @@ export function PlayerController() {
       footstepTimer.current = 0;
     }
 
-    footstepPulse.current = Math.max(0, footstepPulse.current - delta * 1.8);
+    footstepPulse.current = Math.max(0, footstepPulse.current - dt * 1.8);
     const movementNoise = Math.max(footstepPulse.current, !grounded.current ? 0.12 : 0);
     updateMovementNoise(movementNoise);
 
