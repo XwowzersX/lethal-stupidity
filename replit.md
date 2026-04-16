@@ -49,7 +49,7 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 ## Key Commands
 
 - `pnpm --filter @workspace/lethal-stupidity run dev` — run game locally
-- `PORT=25978 BASE_PATH=/ pnpm --filter @workspace/lethal-stupidity run dev` — workflow command used by the Replit preview
+- `PORT=5173 BASE_PATH=/ pnpm --filter @workspace/lethal-stupidity run dev` — workflow command used by the Replit preview
 - `pnpm run typecheck` — full typecheck across all packages
 
 ## Runtime Notes
