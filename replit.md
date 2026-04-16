@@ -24,6 +24,7 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 - Scrap collection system with quota requirements
 - Flashlight toggle
 - Extraction zone mechanic
+- Skippable ARIA briefing/elevator sequence before each floor
 - Local minimap showing nearby rooms, nearby monsters, and elevator/extract direction
 - Timer-based urgency
 - Silly/stupid humor throughout

@@ -309,10 +309,35 @@ export function ElevatorScene() {
               [ DEPLOY TO FACILITY ]
             </button>
           ) : (
-            <div style={{ fontSize: 12, color: "#334433", letterSpacing: 3 }}>
+            <button
+              onClick={startLevel}
+              style={{
+                ...MONO,
+                fontSize: 13,
+                padding: "10px 28px",
+                background: "rgba(0,20,10,0.55)",
+                border: "1px solid #335533",
+                color: "#66aa77",
+                cursor: "pointer",
+                borderRadius: 4,
+                letterSpacing: 3,
+                boxShadow: "inset 0 0 12px rgba(0,255,120,0.08)",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#00ff88";
+                e.currentTarget.style.borderColor = "#00ff88";
+                e.currentTarget.style.background = "rgba(0,40,18,0.8)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#66aa77";
+                e.currentTarget.style.borderColor = "#335533";
+                e.currentTarget.style.background = "rgba(0,20,10,0.55)";
+              }}
+            >
               <span style={{ animation: "blink 1s step-end infinite", display: "inline-block" }}>■</span>
-              {" "}RECEIVING BRIEFING...
-            </div>
+              {" "}[ SKIP ARIA BRIEFING ]
+            </button>
           )}
 
           <div style={{
