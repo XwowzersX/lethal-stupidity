@@ -86,6 +86,7 @@ interface GameStore extends GameState {
   nextLevel: () => void;
   startGame: () => void;
   updateMicLevel: (level: number) => void;
+  updateMovementNoise: (level: number) => void;
   collectScrap: (id: string) => void;
   takeDamage: (amount: number, deathMsg: string) => void;
   toggleFlashlight: () => void;
@@ -114,6 +115,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       health: 100,
       scrapCollected: 0,
       micLevel: 0,
+      movementNoise: 0,
       noiseLevel: 0,
       flashlightOn: true,
       deathMessage: "",
@@ -136,6 +138,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       scrapQuota: config.scrapQuota,
       timeRemaining: config.timeLimit,
       micLevel: 0,
+      movementNoise: 0,
       noiseLevel: 0,
       flashlightOn: true,
       deathMessage: "",
@@ -157,8 +160,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   updateMicLevel: (level: number) => {
-    const noiseLevel = level > 0.15 ? level : 0;
+    const state = get();
+    const micNoise = level > 0.15 ? level : 0;
+    const noiseLevel = Math.max(micNoise, state.movementNoise);
     set({ micLevel: level, noiseLevel });
+  },
+
+  updateMovementNoise: (level: number) => {
+    const state = get();
+    const micNoise = state.micLevel > 0.15 ? state.micLevel : 0;
+    set({ movementNoise: level, noiseLevel: Math.max(micNoise, level) });
   },
 
   collectScrap: (id: string) => {

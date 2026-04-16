@@ -108,6 +108,7 @@ export function GameHUD() {
   const scrapQuota = useGameStore((s) => s.scrapQuota);
   const timeRemaining = useGameStore((s) => s.timeRemaining);
   const micLevel = useGameStore((s) => s.micLevel);
+  const movementNoise = useGameStore((s) => s.movementNoise);
   const noiseLevel = useGameStore((s) => s.noiseLevel);
   const flashlightOn = useGameStore((s) => s.flashlightOn);
   const playerPosition = useGameStore((s) => s.playerPosition);
@@ -201,7 +202,7 @@ export function GameHUD() {
           {"]"}
         </div>
         <div style={{ fontSize: 10, marginTop: 4, opacity: 0.6 }}>
-          MIC: {micLevel > 0 ? "ACTIVE" : "OFF"} {noiseLevel > 0.5 && "MONSTERS CAN HEAR YOU!"}
+          MIC: {micLevel > 0 ? "ACTIVE" : "OFF"} | STEPS: {movementNoise > 0.2 ? "LOUD" : movementNoise > 0 ? "SOFT" : "QUIET"} {noiseLevel > 0.5 && "MONSTERS CAN HEAR YOU!"}
         </div>
       </div>
 
@@ -251,7 +252,8 @@ export function GameHUD() {
         opacity: 0.6,
         lineHeight: 1.6,
       }}>
-        WASD - Move | SHIFT - Sprint<br />
+        WASD - Move | SHIFT - Sprint | SPACE - Jump<br />
+        CTRL/C - Crouch (quieter steps)<br />
         Mouse - Look | F - Flashlight<br />
         E - Extract (at green circle)
       </div>

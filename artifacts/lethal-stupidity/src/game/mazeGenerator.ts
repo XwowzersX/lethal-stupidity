@@ -17,6 +17,9 @@ const DIRECTIONS: Array<{
   { dir: "west", opposite: "east", dx: -1, dz: 0 },
 ];
 
+const PLAYER_RADIUS = 0.45;
+const HALLWAY_HALF_WIDTH = 2.35;
+
 const SEGMENT_TEMPLATES = [
   ["Reception Desk", "office", "clutter"],
   ["Broken Cubicles", "office", "clutter"],
@@ -231,30 +234,55 @@ export function getMazeCell(layout: MazeLayout, worldX: number, worldZ: number):
 }
 
 export function canMoveThrough(layout: MazeLayout, from: THREE.Vector3, to: THREE.Vector3) {
-  const playerRadius = layout.cellSize * 0.045;
+  const playerRadius = PLAYER_RADIUS;
   const halfSize = layout.cellSize / 2;
   const interiorLimit = halfSize - playerRadius;
   const fromCell = getMazeCell(layout, from.x, from.z);
   const toCell = getMazeCell(layout, to.x, to.z);
   if (!fromCell || !toCell) return false;
+  if (collidesWithCellObstacles(toCell, to.x, to.z, playerRadius)) return false;
+
   if (fromCell.id === toCell.id) {
     const localX = to.x - fromCell.worldX;
     const localZ = to.z - fromCell.worldZ;
     const insideInterior = Math.abs(localX) <= interiorLimit && Math.abs(localZ) <= interiorLimit;
     if (insideInterior) return true;
 
-    if (localX > interiorLimit && fromCell.open.east && Math.abs(localZ) <= interiorLimit) return true;
-    if (localX < -interiorLimit && fromCell.open.west && Math.abs(localZ) <= interiorLimit) return true;
-    if (localZ > interiorLimit && fromCell.open.south && Math.abs(localX) <= interiorLimit) return true;
-    if (localZ < -interiorLimit && fromCell.open.north && Math.abs(localX) <= interiorLimit) return true;
+    if (localX > interiorLimit && fromCell.open.east && Math.abs(localZ) <= HALLWAY_HALF_WIDTH) return true;
+    if (localX < -interiorLimit && fromCell.open.west && Math.abs(localZ) <= HALLWAY_HALF_WIDTH) return true;
+    if (localZ > interiorLimit && fromCell.open.south && Math.abs(localX) <= HALLWAY_HALF_WIDTH) return true;
+    if (localZ < -interiorLimit && fromCell.open.north && Math.abs(localX) <= HALLWAY_HALF_WIDTH) return true;
 
     return false;
   }
   const dx = toCell.gridX - fromCell.gridX;
   const dz = toCell.gridZ - fromCell.gridZ;
   if (Math.abs(dx) + Math.abs(dz) !== 1) return false;
-  if (dx === 1) return fromCell.open.east && Math.abs(to.z - fromCell.worldZ) <= interiorLimit;
-  if (dx === -1) return fromCell.open.west && Math.abs(to.z - fromCell.worldZ) <= interiorLimit;
-  if (dz === 1) return fromCell.open.south && Math.abs(to.x - fromCell.worldX) <= interiorLimit;
-  return fromCell.open.north && Math.abs(to.x - fromCell.worldX) <= interiorLimit;
+  if (dx === 1) return fromCell.open.east && Math.abs(to.z - fromCell.worldZ) <= HALLWAY_HALF_WIDTH;
+  if (dx === -1) return fromCell.open.west && Math.abs(to.z - fromCell.worldZ) <= HALLWAY_HALF_WIDTH;
+  if (dz === 1) return fromCell.open.south && Math.abs(to.x - fromCell.worldX) <= HALLWAY_HALF_WIDTH;
+  return fromCell.open.north && Math.abs(to.x - fromCell.worldX) <= HALLWAY_HALF_WIDTH;
+}
+
+export function getCellObstacleBounds(cell: MazeCell) {
+  if (!(cell.hazard === "clutter" || cell.story === "storage" || cell.templateId % 7 === 0)) return [];
+
+  const count = cell.hazard === "clutter" ? 4 : 2;
+  return Array.from({ length: count }).map((_, index) => {
+    const side = index % 2 === 0 ? -1 : 1;
+    const offset = 2.1 + (index % 3) * 0.7;
+    return {
+      x: cell.worldX + side * offset,
+      z: cell.worldZ + 2.8 - index * 0.9,
+      halfX: 0.72,
+      halfZ: 0.72,
+    };
+  });
+}
+
+function collidesWithCellObstacles(cell: MazeCell, x: number, z: number, radius: number) {
+  return getCellObstacleBounds(cell).some((obstacle) => (
+    Math.abs(x - obstacle.x) <= obstacle.halfX + radius &&
+    Math.abs(z - obstacle.z) <= obstacle.halfZ + radius
+  ));
 }

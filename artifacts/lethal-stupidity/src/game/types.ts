@@ -209,6 +209,7 @@ export interface GameState {
   scrapQuota: number;
   timeRemaining: number;
   micLevel: number;
+  movementNoise: number;
   noiseLevel: number;
   flashlightOn: boolean;
   deathMessage: string;
@@ -225,6 +226,7 @@ export const INITIAL_GAME_STATE: GameState = {
   scrapQuota: 80,
   timeRemaining: 300,
   micLevel: 0,
+  movementNoise: 0,
   noiseLevel: 0,
   flashlightOn: true,
   deathMessage: "",

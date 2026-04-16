@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGameStore } from "./useGameStore";
 import { MazeCell } from "./types";
+import { getCellObstacleBounds } from "./mazeGenerator";
 import {
   createConcreteTexture,
   createRustMetalTexture,
@@ -99,20 +100,66 @@ function Pipe({ position, rotation = [0, 0, 0], length, texture }: { position: [
 }
 
 function CrateCluster({ cell, texture }: { cell: MazeCell; texture: THREE.CanvasTexture }) {
-  const count = cell.hazard === "clutter" ? 4 : 2;
+  const obstacles = getCellObstacleBounds(cell);
   return (
     <group>
-      {Array.from({ length: count }).map((_, index) => {
-        const side = index % 2 === 0 ? -1 : 1;
-        const offset = 2.1 + (index % 3) * 0.7;
+      {obstacles.map((obstacle, index) => {
         return (
-          <mesh key={index} position={[cell.worldX + side * offset, 0.55 + index * 0.08, cell.worldZ + 2.8 - index * 0.9]} rotation={[0, index * 0.4, 0]}>
+          <mesh key={index} position={[obstacle.x, 0.55 + index * 0.08, obstacle.z]} rotation={[0, index * 0.4, 0]}>
             <boxGeometry args={[1.2, 1.1, 1.2]} />
             <meshStandardMaterial map={texture} color="#c4aa87" roughness={0.75} metalness={0.15} emissive="#181006" emissiveIntensity={0.08} />
           </mesh>
         );
       })}
     </group>
+  );
+}
+
+function HallwayOpening({
+  cell,
+  direction,
+  wallHeight,
+  wallThickness,
+  cellSize,
+  texture,
+  normalMap,
+}: {
+  cell: MazeCell;
+  direction: "east" | "south";
+  wallHeight: number;
+  wallThickness: number;
+  cellSize: number;
+  texture: THREE.CanvasTexture;
+  normalMap: THREE.CanvasTexture;
+}) {
+  const doorwayWidth = 4.7;
+  const sideLength = (cellSize - doorwayWidth) / 2;
+  const doorHalf = doorwayWidth / 2;
+  const sideOffset = doorHalf + sideLength / 2;
+  const thresholdColor = cell.story === "security" ? "#23311f" : "#1a2119";
+
+  if (direction === "east") {
+    return (
+      <>
+        <Wall position={[cell.worldX + cellSize / 2, wallHeight / 2, cell.worldZ - sideOffset]} size={[wallThickness, wallHeight, sideLength]} texture={texture} normalMap={normalMap} />
+        <Wall position={[cell.worldX + cellSize / 2, wallHeight / 2, cell.worldZ + sideOffset]} size={[wallThickness, wallHeight, sideLength]} texture={texture} normalMap={normalMap} />
+        <mesh position={[cell.worldX + cellSize / 2, 0.045, cell.worldZ]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[1.8, doorwayWidth]} />
+          <meshStandardMaterial color={thresholdColor} emissive="#0b120b" emissiveIntensity={0.42} roughness={0.85} />
+        </mesh>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Wall position={[cell.worldX - sideOffset, wallHeight / 2, cell.worldZ + cellSize / 2]} size={[sideLength, wallHeight, wallThickness]} texture={texture} normalMap={normalMap} />
+      <Wall position={[cell.worldX + sideOffset, wallHeight / 2, cell.worldZ + cellSize / 2]} size={[sideLength, wallHeight, wallThickness]} texture={texture} normalMap={normalMap} />
+      <mesh position={[cell.worldX, 0.045, cell.worldZ + cellSize / 2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[doorwayWidth, 1.8]} />
+        <meshStandardMaterial color={thresholdColor} emissive="#0b120b" emissiveIntensity={0.42} roughness={0.85} />
+      </mesh>
+    </>
   );
 }
 
@@ -225,6 +272,8 @@ export function FacilityMap() {
           </mesh>
           {!cell.open.east && <Wall position={[cell.worldX + cellSize / 2, wallHeight / 2, cell.worldZ]} size={[wallThickness, wallHeight, wallLength]} texture={cell.templateId % 3 === 0 ? metal : concrete} normalMap={concreteNormal} metal={cell.templateId % 3 === 0} />}
           {!cell.open.south && <Wall position={[cell.worldX, wallHeight / 2, cell.worldZ + cellSize / 2]} size={[wallLength, wallHeight, wallThickness]} texture={cell.templateId % 4 === 0 ? metal : concrete} normalMap={concreteNormal} metal={cell.templateId % 4 === 0} />}
+          {cell.open.east && <HallwayOpening cell={cell} direction="east" wallHeight={wallHeight} wallThickness={wallThickness} cellSize={cellSize} texture={concrete} normalMap={concreteNormal} />}
+          {cell.open.south && <HallwayOpening cell={cell} direction="south" wallHeight={wallHeight} wallThickness={wallThickness} cellSize={cellSize} texture={concrete} normalMap={concreteNormal} />}
           {cell.gridX === 0 && !cell.open.west && <Wall position={[cell.worldX - cellSize / 2, wallHeight / 2, cell.worldZ]} size={[wallThickness, wallHeight, wallLength]} texture={metal} normalMap={concreteNormal} metal />}
           {cell.gridZ === 0 && !cell.open.north && <Wall position={[cell.worldX, wallHeight / 2, cell.worldZ - cellSize / 2]} size={[wallLength, wallHeight, wallThickness]} texture={metal} normalMap={concreteNormal} metal />}
           {(cell.templateId + cell.gridX + cell.gridZ) % 2 === 0 && <CeilingLight position={[cell.worldX, 5.25, cell.worldZ]} hazard={cell.hazard} />}

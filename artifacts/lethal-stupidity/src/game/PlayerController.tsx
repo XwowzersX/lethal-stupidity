@@ -8,9 +8,14 @@ import { canMoveThrough } from "./mazeGenerator";
 export function PlayerController() {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
-  const moveState = useRef({ forward: false, backward: false, left: false, right: false, sprint: false });
+  const moveState = useRef({ forward: false, backward: false, left: false, right: false, sprint: false, crouch: false });
   const velocity = useRef(new THREE.Vector3());
   const playerPos = useRef(new THREE.Vector3(0, 1.6, 0));
+  const verticalVelocity = useRef(0);
+  const jumpHeight = useRef(0);
+  const grounded = useRef(true);
+  const footstepTimer = useRef(0);
+  const footstepPulse = useRef(0);
 
   const frameCount = useRef(0);
   const frontVector = useRef(new THREE.Vector3());
@@ -19,6 +24,7 @@ export function PlayerController() {
   const phase = useGameStore((s) => s.phase);
   const mazeLayout = useGameStore((s) => s.mazeLayout);
   const updatePlayerPosition = useGameStore((s) => s.updatePlayerPosition);
+  const updateMovementNoise = useGameStore((s) => s.updateMovementNoise);
   const toggleFlashlight = useGameStore((s) => s.toggleFlashlight);
   const collectScrap = useGameStore((s) => s.collectScrap);
   const extract = useGameStore((s) => s.extract);
@@ -34,6 +40,15 @@ export function PlayerController() {
       case "KeyA": case "ArrowLeft": moveState.current.left = true; break;
       case "KeyD": case "ArrowRight": moveState.current.right = true; break;
       case "ShiftLeft": case "ShiftRight": moveState.current.sprint = true; break;
+      case "ControlLeft": case "ControlRight": case "KeyC": moveState.current.crouch = true; break;
+      case "Space":
+        e.preventDefault();
+        if (grounded.current && !moveState.current.crouch) {
+          grounded.current = false;
+          verticalVelocity.current = 6.5;
+          footstepPulse.current = Math.max(footstepPulse.current, 0.35);
+        }
+        break;
       case "KeyF": toggleFlashlight(); break;
       case "KeyE": {
         const pp = playerPos.current;
@@ -54,6 +69,7 @@ export function PlayerController() {
       case "KeyA": case "ArrowLeft": moveState.current.left = false; break;
       case "KeyD": case "ArrowRight": moveState.current.right = false; break;
       case "ShiftLeft": case "ShiftRight": moveState.current.sprint = false; break;
+      case "ControlLeft": case "ControlRight": case "KeyC": moveState.current.crouch = false; break;
     }
   }, []);
 
@@ -69,15 +85,24 @@ export function PlayerController() {
   useEffect(() => {
     if (phase === "playing" && mazeLayout) {
       playerPos.current.copy(mazeLayout.elevatorPosition);
+      verticalVelocity.current = 0;
+      jumpHeight.current = 0;
+      grounded.current = true;
+      footstepTimer.current = 0;
+      footstepPulse.current = 0;
       camera.position.copy(mazeLayout.elevatorPosition);
       updatePlayerPosition(mazeLayout.elevatorPosition.clone());
+      updateMovementNoise(0);
     }
-  }, [phase, mazeLayout, camera, updatePlayerPosition]);
+  }, [phase, mazeLayout, camera, updatePlayerPosition, updateMovementNoise]);
 
   useFrame((_, delta) => {
     if (phase !== "playing") return;
 
-    const speed = moveState.current.sprint ? 8 : 5;
+    const wantsMove = moveState.current.forward || moveState.current.backward || moveState.current.left || moveState.current.right;
+    const isCrouching = moveState.current.crouch;
+    const isSprinting = moveState.current.sprint && !isCrouching;
+    const speed = isCrouching ? 2.35 : isSprinting ? 8 : 5;
     frontVector.current.set(0, 0, Number(moveState.current.backward) - Number(moveState.current.forward));
     sideVector.current.set(Number(moveState.current.left) - Number(moveState.current.right), 0, 0);
     direction.current
@@ -113,7 +138,36 @@ export function PlayerController() {
     const boundary = mazeLayout ? Math.max(mazeLayout.width, mazeLayout.height) * mazeLayout.cellSize : 33;
     playerPos.current.x = Math.max(-boundary, Math.min(boundary, playerPos.current.x));
     playerPos.current.z = Math.max(-boundary, Math.min(boundary, playerPos.current.z));
-    playerPos.current.y = 1.6;
+    if (!grounded.current || verticalVelocity.current !== 0) {
+      verticalVelocity.current -= 18 * delta;
+      jumpHeight.current += verticalVelocity.current * delta;
+      if (jumpHeight.current <= 0) {
+        if (!grounded.current && verticalVelocity.current < -3) {
+          footstepPulse.current = Math.max(footstepPulse.current, isSprinting ? 0.55 : 0.38);
+        }
+        jumpHeight.current = 0;
+        verticalVelocity.current = 0;
+        grounded.current = true;
+      }
+    }
+
+    const eyeHeight = isCrouching ? 1.02 : 1.6;
+    playerPos.current.y = eyeHeight + jumpHeight.current;
+
+    if (wantsMove && grounded.current) {
+      footstepTimer.current += delta;
+      const stepInterval = isCrouching ? 0.58 : isSprinting ? 0.22 : 0.36;
+      if (footstepTimer.current >= stepInterval) {
+        footstepTimer.current = 0;
+        footstepPulse.current = Math.max(footstepPulse.current, isCrouching ? 0.1 : isSprinting ? 0.55 : 0.32);
+      }
+    } else {
+      footstepTimer.current = 0;
+    }
+
+    footstepPulse.current = Math.max(0, footstepPulse.current - delta * 1.8);
+    const movementNoise = Math.max(footstepPulse.current, !grounded.current ? 0.12 : 0);
+    updateMovementNoise(movementNoise);
 
     camera.position.copy(playerPos.current);
     frameCount.current++;

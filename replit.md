@@ -20,6 +20,7 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 - First-person 3D exploration in a dark facility
 - Procedural maze floors with reusable segment themes
 - Voice detection via microphone - monsters react to player noise
+- Jumping, crouching, and movement footstep noise that monsters can hear
 - Multiple monster types with unique behaviors and funny death messages
 - Scrap collection system with quota requirements
 - Flashlight toggle
@@ -37,7 +38,7 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
   - `useGameStore.ts` - Zustand game state, level generation, spawns, monster updates
   - `useVoiceDetection.ts` - Microphone input hook
   - `GameScene.tsx` - Main 3D canvas scene
-  - `PlayerController.tsx` - First-person movement, pointer lock, maze collision
+- `PlayerController.tsx` - First-person movement, jumping, crouching, footstep noise, pointer lock, maze/object collision
   - `Flashlight.tsx` - Optimized mounted flashlight and fill light
   - `MonsterEntity.tsx` - Monster rendering + animation
   - `ScrapEntity.tsx` - Collectible items
@@ -59,3 +60,4 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 - `App.tsx` only lazy-loads the 3D game scene after gameplay begins so the menu can load reliably in the preview before WebGL is needed.
 - Gameplay lighting is intentionally optimized for the browser preview: shadows are disabled, scrap/monster indicator point lights are avoided, and the flashlight stays mounted while its intensity changes to prevent multi-second WebGL shader stalls.
 - Each level now keeps its existing quota/time/monster difficulty but generates a fresh connected maze layout when the floor starts; B1 stays smaller and safer, while later floors become larger and denser.
+- Maze openings render as narrower hallway thresholds, and decorative storage cubes/crates now share collision with the movement system.
