@@ -56,6 +56,7 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 - **Flow**: Auth screen on load → "Sign In", "Create Account" (Clerk), or "Continue as Temp Worker" (guest, sessionStorage)
 - **Save slots**: 5 per user account stored in `save_slots` PostgreSQL table; guests get no saves
 - **Key env vars**: `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` (Replit secrets); explicitly defined in `vite.config.ts`
+- Clerk development keys have been provisioned through the built-in auth setup so `/sign-in` and `/sign-up` render live account forms in development.
 
 ## API Server
 
