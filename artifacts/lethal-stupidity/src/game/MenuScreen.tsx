@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "./useGameStore";
-import { useClerk } from "@clerk/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/queryClient";
 import { LEVEL_CONFIGS } from "./types";
@@ -17,6 +16,7 @@ interface MenuScreenProps {
   isGuest: boolean;
   userName?: string;
   onBack?: () => void;
+  onSignOut?: () => void;
 }
 
 function useNoise() {
@@ -224,11 +224,10 @@ function BackMenuArrow({ onBack }: { onBack: () => void }) {
   );
 }
 
-export function MenuScreen({ isGuest, userName, onBack }: MenuScreenProps) {
+export function MenuScreen({ isGuest, userName, onBack, onSignOut }: MenuScreenProps) {
   const phase = useGameStore((s) => s.phase);
   const startGame = useGameStore((s) => s.startGame);
   const enterElevator = useGameStore((s) => s.enterElevator);
-  const { signOut } = useClerk();
   const qc = useQueryClient();
 
   const { data: savesData, isLoading: savesLoading } = useQuery<SaveSlot[]>({
@@ -286,9 +285,9 @@ export function MenuScreen({ isGuest, userName, onBack }: MenuScreenProps) {
               EMPLOYEE: {userName.toUpperCase()}
             </div>
           )}
-          {!isGuest && (
+          {!isGuest && onSignOut && (
             <button
-              onClick={() => signOut()}
+              onClick={onSignOut}
               style={{ fontFamily: "'Share Tech Mono', monospace", fontSize: 9, letterSpacing: 2, background: "transparent", border: "1px solid rgba(255,34,68,0.2)", color: "rgba(255,34,68,0.5)", cursor: "pointer", padding: "4px 10px", borderRadius: 3, transition: "all 0.15s" }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,34,68,0.6)"; e.currentTarget.style.color = "#ff2244"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,34,68,0.2)"; e.currentTarget.style.color = "rgba(255,34,68,0.5)"; }}

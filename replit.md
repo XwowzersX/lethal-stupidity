@@ -75,6 +75,8 @@ A browser-based 3D horror-comedy game inspired by Lethal Company. Players explor
 ## Runtime Notes
 
 - The game is registered as the root web preview at `/`.
+- Local development can run without Clerk keys; when `VITE_CLERK_PUBLISHABLE_KEY` is absent, the frontend automatically falls back to guest-only play so the game still launches.
+- The API health route is available without Clerk middleware; save-slot routes still require Clerk auth when account login is configured.
 - `App.tsx` only lazy-loads the 3D game scene after gameplay begins so the menu can load reliably in the preview before WebGL is needed.
 - Gameplay lighting is intentionally optimized for the browser preview: shadows are disabled, scrap/monster indicator point lights are avoided, and the flashlight stays mounted while its intensity changes to prevent multi-second WebGL shader stalls.
 - Each level now keeps its existing quota/time/monster difficulty but generates a fresh connected maze layout when the floor starts; B1 stays smaller and safer, while later floors become larger and denser.

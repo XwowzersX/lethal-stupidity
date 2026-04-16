@@ -28,8 +28,7 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(clerkMiddleware());
-
+app.use("/api/saves", clerkMiddleware());
 app.use("/api", router);
 
 export default app;

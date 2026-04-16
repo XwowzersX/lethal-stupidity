@@ -18,10 +18,6 @@ const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
-}
-
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path;
 }
@@ -107,6 +103,7 @@ function ClerkQueryCacheInvalidator() {
 
 function GameApp() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { signOut } = useClerk();
   const { user } = useUser();
   const phase = useGameStore((s) => s.phase);
   const [guestMode, setGuestMode] = useState(() => sessionStorage.getItem("ls_guest") === "1");
@@ -137,6 +134,7 @@ function GameApp() {
           isGuest={!isSignedIn}
           userName={user?.firstName ?? user?.username ?? undefined}
           onBack={!isSignedIn ? () => { sessionStorage.removeItem("ls_guest"); setGuestMode(false); } : undefined}
+          onSignOut={() => signOut()}
         />
       )}
       {phase === "elevator" && <ElevatorScene />}
@@ -151,8 +149,43 @@ function GameApp() {
   );
 }
 
+function GuestOnlyGameApp() {
+  const phase = useGameStore((s) => s.phase);
+  const [guestMode, setGuestMode] = useState(() => sessionStorage.getItem("ls_guest") === "1");
+
+  if (!guestMode) {
+    return <AuthScreen onGuest={() => { sessionStorage.setItem("ls_guest", "1"); setGuestMode(true); }} />;
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#000" }}>
+        {phase === "menu" && (
+          <MenuScreen
+            isGuest={true}
+            onBack={() => { sessionStorage.removeItem("ls_guest"); setGuestMode(false); }}
+          />
+        )}
+        {phase === "elevator" && <ElevatorScene />}
+        {phase === "playing" && (
+          <Suspense fallback={<div style={{ color: "#00ff41", fontFamily: "'Share Tech Mono', monospace", padding: 24, fontSize: 12, letterSpacing: 3 }}>LOADING FACILITY...</div>}>
+            <GameScene />
+          </Suspense>
+        )}
+        {phase === "dead" && <DeathScreen />}
+        {phase === "extracted" && <ExtractScreen />}
+      </div>
+    </QueryClientProvider>
+  );
+}
+
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
+
+  if (!clerkPubKey) {
+    return <GuestOnlyGameApp />;
+  }
+
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
